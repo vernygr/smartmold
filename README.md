@@ -1,44 +1,35 @@
-[
-  {
-    "id": "TS-001",
-    "fecha": "2025-01-10",
-    "categoria": "Rechupe / Hundimiento",
-    "severidad": "alta",
-    "sintoma": "Hundimiento profundo en nervio central",
-    "causa_raiz": "Presión de mantenimiento insuficiente",
-    "solucion": "Aumentar presión de 600 a 720 bar y tiempo a 7 seg",
-    "parametro": "Presión mantenimiento",
-    "valor_anterior": "600 bar",
-    "valor_nuevo": "720 bar",
-    "material": "PP",
-    "tecnico": "Carlos M."
-  },
-  {
-    "id": "TS-002",
-    "fecha": "2025-01-12",
-    "categoria": "Rebabas / Flash",
-    "severidad": "media",
-    "sintoma": "Flash en línea de partición lado conductor",
-    "causa_raiz": "Fuerza de cierre insuficiente",
-    "solucion": "Fuerza de cierre de 800 a 950 kN. Verificar paralelismo.",
-    "parametro": "Fuerza de cierre",
-    "valor_anterior": "800 kN",
-    "valor_nuevo": "950 kN",
-    "material": "ABS",
-    "tecnico": "Luis R."
-  },
-  {
-    "id": "TS-003",
-    "fecha": "2025-01-15",
-    "categoria": "Vacío / Pieza Incompleta",
-    "severidad": "alta",
-    "sintoma": "Pieza incompleta o sin llenar en extremo distal",
-    "causa_raiz": "Temperatura zona 3 fuera de rango y velocidad baja",
-    "solucion": "Temp Z3: 210→225°C. Velocidad: 45→70 mm/s",
-    "parametro": "Temp Z3 / Velocidad",
-    "valor_anterior": "210°C / 45mm/s",
-    "valor_nuevo": "225°C / 70mm/s",
-    "material": "PA66",
-    "tecnico": "Ana G."
-  }
-]
+# SmartMold EP
+
+Herramienta de diagnóstico industrial para procesos de inyección de plástico, desarrollada para **ElectroPlast**.
+
+Permite a técnicos y operadores navegar un árbol de decisión para diagnosticar defectos de inyección (rechupes, rebabas, piezas incompletas, etc.), registrar soluciones aplicadas y llevar un historial de incidencias por molde.
+
+## Estructura del proyecto
+
+Este repositorio contiene dos variantes de la aplicación:
+
+- **`index.html`** — Aplicación estática de página única (HTML/CSS/JS embebidos), desplegada en Netlify. Persiste datos en `localStorage` y sincroniza opcionalmente con Google Sheets a través de un proxy CORS.
+- **`app.py`** + **`templates/index.html`** — Servidor Flask con autenticación por sesión y persistencia en archivos JSON (`data/records.json`, `data/mold_records.json`). Pensado para despliegue local o en un servidor propio.
+
+> Ambas variantes comparten la misma interfaz, pero **no comparten datos entre sí**: la versión estática usa `localStorage`/Google Sheets, mientras que la versión Flask usa su propio almacenamiento en disco.
+
+## Funcionalidades
+
+- Diagnóstico guiado por árbol de decisión para defectos comunes de inyección
+- Registro de troubleshooting (causa raíz, solución, parámetros antes/después)
+- Registro y búsqueda de incidencias por molde
+- Estadísticas básicas (total de registros, moldes, últimos defectos)
+- Autenticación con roles: `admin`, `operador`, `tecnico`, `supervisor`
+
+## Ejecutar la versión Flask localmente
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+La app quedará disponible en `http://localhost:5000`.
+
+## Despliegue
+
+La versión estática (`index.html`) está publicada en [smartmoldep.netlify.app](https://smartmoldep.netlify.app).
