@@ -156,7 +156,7 @@ insert into public.records (id, fecha, categoria, severidad, sintoma, causa_raiz
 on conflict (id) do nothing;
 
 -- Los 78 registros de "Base de datos — Excel Rodolfo" van a continuación.
-﻿INSERT INTO public.records (id, fecha, categoria, severidad, sintoma, causa_raiz, solucion, parametro, valor_anterior, valor_nuevo, material, tecnico) VALUES
+insert into public.records (id, fecha, categoria, severidad, sintoma, causa_raiz, solucion, parametro, valor_anterior, valor_nuevo, material, tecnico) values
   ('TSE-01A', '2025-01-01'::date, 'Rechupe / Hundimiento', 'media', 'Rechupe (Sink marks)', 'A. Presión de compactación insuficiente', 'Aumentar la presión de empaque dentro del rango seguro del molde | Aumentar el tiempo de empaque para compensar contracción | Implementar un perfil de compactación escalonado en lugar de un valor fijo', '', '', '', '', 'Base de datos — Excel Rodolfo'),
   ('TSE-01B', '2025-01-01'::date, 'Rechupe / Hundimiento', 'media', 'Rechupe (Sink marks)', 'B. Tiempo de compactación muy corto', 'Aumentar el tiempo de empaque hasta que se selle el gate | Ajustar el enfriamiento para un empaque más largo sin alargar ciclo total', '', '', '', '', 'Base de datos — Excel Rodolfo'),
   ('TSE-01C', '2025-01-01'::date, 'Rechupe / Hundimiento', 'media', 'Rechupe (Sink marks)', 'C. Temperatura de molde demasiado alta', 'Reducir la temperatura del molde | Aumentar el caudal de agua en circuitos de enfriamiento', '', '', '', '', 'Base de datos — Excel Rodolfo'),
