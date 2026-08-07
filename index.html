@@ -992,9 +992,9 @@ option { background: var(--white); }
     <div class="lg-hr"></div>
     <div class="lg-fields">
       <div>
-        <label class="lg-lbl">Usuario</label>
+        <label class="lg-lbl">Correo electrónico</label>
         <div class="lg-inp-wrap">
-          <input class="lg-inp" id="lg-u" type="text" placeholder="Ingresa tu usuario"
+          <input class="lg-inp" id="lg-u" type="email" placeholder="tu@correo.com"
             autocomplete="username"
             onkeydown="if(event.key==='Enter')document.getElementById('lg-p').focus()" />
           <span class="lg-ico">👤</span>
@@ -1036,9 +1036,7 @@ option { background: var(--white); }
     <a class='tnav' href='/defectos' style='text-decoration: none; border: none; padding: 8px 12px;'>🔎 Defectos</a>
     <button class="tnav" onclick="showPage('admin')">🗄️ Base de Datos</button>
   </nav>
-  <button class="topbar-sync" onclick="syncNow()" id="sync-btn">
-    <span>🔄</span> Sincronizar
-  </button>
+  <button class="btn btn-ghost" onclick="doLogout()" style="font-size:12px;" title="Cerrar sesión">🚪 Salir</button>
 </header>
 
 <!-- Mobile nav -->
@@ -1292,7 +1290,6 @@ option { background: var(--white); }
     <button class="tab" onclick="showTab('t-mold')">🔩 Por Molde</button>
     <button class="tab" onclick="showTab('t-records')">📋 Registros</button>
     <button class="tab" onclick="showTab('t-schema')">📊 Estructura</button>
-    <button class="tab" onclick="showTab('t-gsheet')">🔗 Google Sheets</button>
   </div>
 
   <!-- NEW RECORD -->
@@ -1302,7 +1299,7 @@ option { background: var(--white); }
         <div class="card-icon ci-blue">📝</div>
         <div>
           <div class="card-title">Nuevo Registro de Troubleshooting</div>
-          <div class="card-sub">Los datos se guardan localmente y se sincronizan con Google Sheets</div>
+          <div class="card-sub">Los datos se guardan directo en la base de datos (Supabase)</div>
         </div>
       </div>
       <div class="card-body">
@@ -1311,27 +1308,6 @@ option { background: var(--white); }
             <label class="flabel">Categoría *</label>
             <select class="ffield" id="f-cat">
               <option value="">Seleccionar...</option>
-              <option>Rechupe / Hundimiento</option>
-              <option>Rebabas / Flash</option>
-              <option>Vacío / Pieza Incompleta</option>
-              <option>Manchas de Color</option>
-              <option>Contaminación del Material</option>
-              <option>Fragilidad / Fractura</option>
-              <option>Hilos Plateados / Splay</option>
-              <option>Hilos / Stringing</option>
-              <option>Puntos Negros</option>
-              <option>Opacidad / Brillo Irregular</option>
-              <option>Encogimiento Excesivo</option>
-              <option>Inestabilidad Dimensional</option>
-              <option>Baja Densidad / Esponjoso</option>
-              <option>Degradación del Material</option>
-              <option>Marcas de Flujo</option>
-              <option>Burbujas / Vacíos</option>
-              <option>Deformación / Warpage</option>
-              <option>Quemado / Degradación</option>
-              <option>Pegado en Molde</option>
-              <option>Líneas de Unión</option>
-              <option>Otro</option>
             </select>
           </div>
           <div class="form-group">
@@ -1360,12 +1336,28 @@ option { background: var(--white); }
             <input class="ffield" id="f-param" placeholder="Ej: Temperatura barril..." />
           </div>
           <div class="form-group">
-            <label class="flabel">Valor anterior → nuevo</label>
-            <input class="ffield" id="f-values" placeholder="Ej: 210°C → 225°C" />
+            <label class="flabel">Valor anterior</label>
+            <input class="ffield" id="f-val-old" placeholder="Ej: 210°C" />
+          </div>
+          <div class="form-group">
+            <label class="flabel">Valor nuevo</label>
+            <input class="ffield" id="f-val-new" placeholder="Ej: 225°C" />
           </div>
           <div class="form-group">
             <label class="flabel">Material</label>
-            <input class="ffield" id="f-material" placeholder="PP, ABS, PE, PA66..." />
+            <select class="ffield" id="f-material" onchange="document.getElementById('f-material-other').style.display = this.value==='Otro' ? 'block' : 'none'">
+              <option value="">Seleccionar...</option>
+              <option>PP</option>
+              <option>ABS</option>
+              <option>PE</option>
+              <option>PA66</option>
+              <option>PC</option>
+              <option>POM</option>
+              <option>PS</option>
+              <option>TPE</option>
+              <option>Otro</option>
+            </select>
+            <input class="ffield" id="f-material-other" placeholder="Especifica el material..." style="display:none;margin-top:6px;" />
           </div>
           <div class="form-group">
             <label class="flabel">Técnico</label>
@@ -1448,7 +1440,6 @@ option { background: var(--white); }
           <div class="card-title">Registros Generales de Troubleshooting</div>
           <div class="card-sub" id="rec-count-label">Cargando...</div>
         </div>
-        <button class="btn btn-outline" style="margin-left:auto;" onclick="syncNow()">🔄 Sincronizar</button>
       </div>
       <div id="records-table-wrap" style="overflow-x:auto;">
         <table class="schema-tbl" id="records-table">
@@ -1476,65 +1467,45 @@ option { background: var(--white); }
       <div class="card-header">
         <div class="card-icon ci-blue">📊</div>
         <div>
-          <div class="card-title">Estructura de Google Sheets</div>
-          <div class="card-sub">Replica esta estructura exacta en tu hoja de cálculo</div>
+          <div class="card-title">Estructura de la Base de Datos</div>
+          <div class="card-sub">Tablas en Supabase (Postgres) — ver supabase/schema.sql</div>
         </div>
       </div>
       <div class="card-body">
-        <div style="font-family:var(--mono);font-size:11px;color:var(--ep-blue);font-weight:700;margin-bottom:8px;">HOJA 1 — troubleshooting_general</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--ep-blue);font-weight:700;margin-bottom:8px;">TABLA — records</div>
         <table class="schema-tbl" style="margin-bottom:20px;">
-          <thead><tr><th>COL</th><th>CAMPO</th><th>TIPO</th><th>REQ</th><th>DESCRIPCIÓN</th></tr></thead>
+          <thead><tr><th>CAMPO</th><th>TIPO</th><th>REQ</th><th>DESCRIPCIÓN</th></tr></thead>
           <tbody>
-            <tr><td>A</td><td>id</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>TS-001, TS-002...</td></tr>
-            <tr><td>B</td><td>fecha</td><td><span class="tbadge tb-blue">FECHA</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>YYYY-MM-DD</td></tr>
-            <tr><td>C</td><td>categoria</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>Tipo de defecto</td></tr>
-            <tr><td>D</td><td>severidad</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>alta / media / baja</td></tr>
-            <tr><td>E</td><td>sintoma</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>Síntoma observado</td></tr>
-            <tr><td>F</td><td>causa_raiz</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>Causa identificada</td></tr>
-            <tr><td>G</td><td>solucion</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>Solución aplicada</td></tr>
-            <tr><td>H</td><td>parametro</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>Parámetro ajustado</td></tr>
-            <tr><td>I</td><td>valor_anterior</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>Valor antes del ajuste</td></tr>
-            <tr><td>J</td><td>valor_nuevo</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>Valor después del ajuste</td></tr>
-            <tr><td>K</td><td>material</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>PP, ABS, PA66...</td></tr>
-            <tr><td>L</td><td>tecnico</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>Nombre del técnico</td></tr>
-            <tr><td>M</td><td>activo</td><td><span class="tbadge tb-blue">BOOL</span></td><td></td><td>TRUE = visible en la app</td></tr>
+            <tr><td>id</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>TS-001, TS-002...</td></tr>
+            <tr><td>fecha</td><td><span class="tbadge tb-blue">FECHA</span></td><td></td><td>YYYY-MM-DD</td></tr>
+            <tr><td>categoria</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>Tipo de defecto</td></tr>
+            <tr><td>severidad</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>alta / media / baja</td></tr>
+            <tr><td>sintoma</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>Síntoma observado</td></tr>
+            <tr><td>causa_raiz</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>Causa identificada</td></tr>
+            <tr><td>solucion</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>Solución aplicada</td></tr>
+            <tr><td>parametro</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>Parámetro ajustado</td></tr>
+            <tr><td>valor_anterior</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>Valor antes del ajuste</td></tr>
+            <tr><td>valor_nuevo</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>Valor después del ajuste</td></tr>
+            <tr><td>material</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>PP, ABS, PA66...</td></tr>
+            <tr><td>tecnico</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>Nombre del técnico</td></tr>
+            <tr><td>created_by / created_at</td><td><span class="tbadge tb-blue">UUID / FECHA</span></td><td></td><td>Autor y fecha de creación</td></tr>
           </tbody>
         </table>
-        <div style="font-family:var(--mono);font-size:11px;color:var(--ep-blue);font-weight:700;margin-bottom:8px;">HOJA 2 — problemas_por_molde</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--ep-blue);font-weight:700;margin-bottom:8px;">TABLA — mold_records</div>
         <table class="schema-tbl">
-          <thead><tr><th>COL</th><th>CAMPO</th><th>TIPO</th><th>REQ</th><th>DESCRIPCIÓN</th></tr></thead>
+          <thead><tr><th>CAMPO</th><th>TIPO</th><th>REQ</th><th>DESCRIPCIÓN</th></tr></thead>
           <tbody>
-            <tr><td>A</td><td>id_molde</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>MOL-001</td></tr>
-            <tr><td>B</td><td>fecha</td><td><span class="tbadge tb-blue">FECHA</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>YYYY-MM-DD</td></tr>
-            <tr><td>C</td><td>problema</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>Descripción del problema</td></tr>
-            <tr><td>D</td><td>diagnostico</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>Causa identificada</td></tr>
-            <tr><td>E</td><td>accion</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>Qué se hizo</td></tr>
-            <tr><td>F</td><td>estado</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>abierto / en_proceso / resuelto</td></tr>
-            <tr><td>G</td><td>severidad</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>alta / media / baja</td></tr>
+            <tr><td>id</td><td><span class="tbadge tb-blue">UUID</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>Generado automáticamente</td></tr>
+            <tr><td>id_molde</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>MOL-001</td></tr>
+            <tr><td>fecha</td><td><span class="tbadge tb-blue">FECHA</span></td><td></td><td>YYYY-MM-DD</td></tr>
+            <tr><td>problema</td><td><span class="tbadge tb-blue">TEXTO</span></td><td><span class="tbadge tb-red">SÍ</span></td><td>Descripción del problema</td></tr>
+            <tr><td>diagnostico</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>Causa identificada</td></tr>
+            <tr><td>accion</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>Qué se hizo</td></tr>
+            <tr><td>estado</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>abierto / en_proceso / resuelto</td></tr>
+            <tr><td>severidad</td><td><span class="tbadge tb-blue">TEXTO</span></td><td></td><td>alta / media / baja</td></tr>
           </tbody>
         </table>
       </div>
-    </div>
-  </div>
-
-  <!-- GSHEET -->
-  <div class="panel" id="t-gsheet">
-    <div class="gs-box">
-      <div class="gs-title">🔗 Conexión con Google Sheets</div>
-      <div class="gs-desc">Conecta tu hoja de cálculo para sincronización bidireccional automática. Los datos se guardan incluso si cierras la app y solo se borran si los eliminas en la hoja.</div>
-      <label class="flabel" style="margin-bottom:4px;display:block;">URL DEL APPS SCRIPT</label>
-      <div class="gs-row">
-        <input class="field gs-url" id="gs-url" placeholder="https://script.google.com/macros/s/..." />
-        <button class="btn btn-primary" onclick="connectSheet()">Conectar</button>
-      </div>
-      <div class="gs-status" id="gs-status"></div>
-      <ol class="gs-steps">
-        <li class="gs-step"><span class="gs-step-num">1</span><span>Abre tu Google Sheet → <strong>Extensiones → Apps Script</strong> → pega el código del archivo <code>apps_script_completo.gs</code></span></li>
-        <li class="gs-step"><span class="gs-step-num">2</span><span>Ejecuta la función <strong>inicializarHojas()</strong> para crear las hojas automáticamente</span></li>
-        <li class="gs-step"><span class="gs-step-num">3</span><span>Clic en <strong>Implementar → Nueva implementación → App web</strong>. Acceso: <strong>Cualquier persona</strong></span></li>
-        <li class="gs-step"><span class="gs-step-num">4</span><span>Copia la URL generada y pégala arriba. Haz clic en <strong>Conectar</strong>.</span></li>
-        <li class="gs-step"><span class="gs-step-num">5</span><span>¡Listo! Los datos persisten aunque cierres la app. Solo se borran si los eliminas en la hoja de cálculo.</span></li>
-      </ol>
     </div>
   </div>
 </div>
@@ -1545,8 +1516,7 @@ option { background: var(--white); }
 <div class="statusbar">
   <span><span class="status-dot"></span> SmartMold EP Activo</span>
   <span>Registros: <span id="status-count">0</span></span>
-  <span>Última sync: <span id="status-sync">—</span></span>
-  <span id="sync-indicator" style="display:none;color:var(--ep-green);">● Sincronizando...</span>
+  <span>Sesión: <span id="status-sync">—</span></span>
   <span class="status-ml" style="opacity:0.5;">ElectroPlast · SmartMold EP v3.0</span>
 </div>
 
@@ -1564,47 +1534,77 @@ option { background: var(--white); }
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════
+// SUPABASE — configuración de conexión
+// Reemplaza estos dos valores con los de tu proyecto:
+// Supabase Dashboard → Project Settings → API
+// ══════════════════════════════════════════════════════════
+const SUPABASE_URL      = "TU_SUPABASE_URL_AQUI";
+const SUPABASE_ANON_KEY = "TU_SUPABASE_ANON_KEY_AQUI";
+const SUPABASE_CONFIGURED = /^https?:\/\//.test(SUPABASE_URL) && SUPABASE_ANON_KEY.length > 20;
+
+let supabaseClient = null;
+if (SUPABASE_CONFIGURED) {
+  supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} else {
+  // Evita que la app quede rota en silencio si alguien olvida reemplazar
+  // las credenciales de arriba — ver README para la configuración completa.
+  document.body.insertAdjacentHTML('afterbegin', `
+    <div style="position:fixed;inset:0;z-index:99999;background:#0f2044;color:#fff;display:flex;align-items:center;justify-content:center;font-family:sans-serif;padding:24px;text-align:center;">
+      <div style="max-width:480px;">
+        <div style="font-size:40px;margin-bottom:12px;">⚠️</div>
+        <div style="font-size:20px;font-weight:700;margin-bottom:10px;">Falta configurar Supabase</div>
+        <div style="font-size:14px;opacity:0.85;line-height:1.6;">
+          Reemplaza <code>SUPABASE_URL</code> y <code>SUPABASE_ANON_KEY</code> al inicio de <code>index.html</code>
+          con los valores de tu proyecto (Project Settings → API en el dashboard de Supabase).
+          Instrucciones completas en el README.
+        </div>
+      </div>
+    </div>`);
+}
+</script>
+
 <script>
 // ══════════════════════════════════════════════════════════
 // SMARTMOLD EP — Core JS
 // ══════════════════════════════════════════════════════════
 
 // ── STORAGE KEYS ──
-const KEYS = {
-  records:     'sm_records',
-  moldRecords: 'sm_mold_records',
-  sheetsUrl:   'sm_sheets_url',
-};
-
-// ── DB: load from localStorage on boot ──
+// ── DB: se puebla desde Supabase justo después de iniciar sesión ──
 let db = {
-  records: JSON.parse(localStorage.getItem(KEYS.records) || '[]'),
-  moldRecords: JSON.parse(localStorage.getItem(KEYS.moldRecords) || '[]'),
+  records: [],
+  moldRecords: [],
+  defectCategories: [],
 };
 
-// Seed with demo data if empty
-if (db.records.length === 0) {
-  db.records = [
-    { id:'TS-001', fecha:'2025-01-10', categoria:'Rechupe / Hundimiento', severidad:'alta', sintoma:'Hundimiento profundo en nervio central', causa_raiz:'Presión de mantenimiento insuficiente', solucion:'Aumentar presión de 600 a 720 bar y tiempo a 7 seg', parametro:'Presión mantenimiento', valor_anterior:'600 bar', valor_nuevo:'720 bar', material:'PP', tecnico:'Carlos M.' },
-    { id:'TS-002', fecha:'2025-01-12', categoria:'Rebabas / Flash', severidad:'media', sintoma:'Flash en línea de partición lado conductor', causa_raiz:'Fuerza de cierre insuficiente', solucion:'Fuerza de cierre de 800 a 950 kN. Verificar paralelismo.', parametro:'Fuerza de cierre', valor_anterior:'800 kN', valor_nuevo:'950 kN', material:'ABS', tecnico:'Luis R.' },
-    { id:'TS-003', fecha:'2025-01-15', categoria:'Vacío / Pieza Incompleta', severidad:'alta', sintoma:'Pieza incompleta o sin llenar en extremo distal', causa_raiz:'Temperatura zona 3 fuera de rango y velocidad baja', solucion:'Temp Z3: 210→225°C. Velocidad: 45→70 mm/s', parametro:'Temp Z3 / Velocidad', valor_anterior:'210°C / 45mm/s', valor_nuevo:'225°C / 70mm/s', material:'PA66', tecnico:'Ana G.' },
-  ];
-  saveRecords();
+// Carga inicial (y recarga tras cada login) de las 3 tablas desde Supabase
+async function loadInitialData() {
+  const [recRes, moldRes, catRes] = await Promise.all([
+    supabaseClient.from('records').select('*').order('created_at', { ascending: false }),
+    supabaseClient.from('mold_records').select('*').order('created_at', { ascending: false }),
+    supabaseClient.from('defect_categories').select('*').order('sort_order'),
+  ]);
+
+  db.records          = recRes.data  || [];
+  db.moldRecords       = moldRes.data || [];
+  db.defectCategories = catRes.data  || [];
+
+  populateCategoryDropdown();
+  updateStats();
+  renderRecordsTable();
+  renderMoldRecordsTable();
+  const moldPage = document.getElementById('page-mold');
+  if (moldPage && moldPage.classList.contains('active')) renderMolds(db.moldRecords, '');
 }
 
-// Datos de molde: siempre se leen de Google Sheets en tiempo real.
-// localStorage solo persiste registros agregados en esta sesión antes de sync.
-// Los datos de Sheets siempre reemplazan lo local al cargar "Por Molde".
-
-function saveRecords()     { localStorage.setItem(KEYS.records,     JSON.stringify(db.records));     }
-function saveMoldRecords() { localStorage.setItem(KEYS.moldRecords, JSON.stringify(db.moldRecords)); }
-
 function updateStats() {
-  document.getElementById('stat-probs').textContent   = 21; // 21 defectos del Excel
+  document.getElementById('stat-probs').textContent   = db.defectCategories.length || 18;
   document.getElementById('stat-records').textContent = db.records.length;
   document.getElementById('stat-molds').textContent   = new Set(db.moldRecords.map(r => r.id_molde)).size;
   document.getElementById('status-count').textContent = db.records.length;
-  document.getElementById('status-sync').textContent  = new Date().toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'});
+  // status-sync muestra el usuario de la sesión (ver loadProfile) — no se pisa aquí.
 }
 
 updateStats();
@@ -1621,17 +1621,12 @@ function showPage(id) {
   page.style.display = 'flex';
   page.classList.add('active');
 
-  // Cargar datos desde Google Sheets cuando se abre la página de moldes
-  if (id === 'mold') {
-    showAllMolds();
-  }
-
   const labels = { home:'Inicio', diag:'Solucionador', mold:'Molde', admin:'Base de Datos' };
   document.querySelectorAll('.tnav').forEach(b => {
     if (b.textContent.includes(labels[id] || '')) b.classList.add('active');
   });
 
-  if (id === 'mold')    { showAllMolds(); }  // always fetches fresh from Sheets
+  if (id === 'mold')    { showAllMolds(); }
   if (id === 'admin')   { renderRecordsTable(); renderMoldRecordsTable(); updateStats(); }
   if (id === 'diag' && !diagState.tree) { renderDefectSelector(); }
 }
@@ -1695,28 +1690,11 @@ function renderDiag() {
   if (step) renderStep(step);
 }
 
+// Fuente única de las 18 categorías canónicas: db.defectCategories (tabla
+// defect_categories en Supabase). La usan tanto este selector del árbol de
+// diagnóstico como el dropdown "Categoría" del formulario de Nuevo Registro
+// (ver populateCategoryDropdown), para que ambos queden siempre alineados.
 function renderDefectSelector() {
-  const defects = [
-    { id:'rechupe',        icon:'🕳️', name:'Rechupe / Hundimiento',        hint:'Hoyos o hundimientos en superficie' },
-    { id:'rebaba',         icon:'✂️', name:'Rebaba / Flash',                hint:'Material extra en bordes' },
-    { id:'vacio',          icon:'📉', name:'Vacío / Pieza Incompleta',      hint:'Pieza incompleta o sin llenar' },
-    { id:'marcas_flujo',   icon:'〰️', name:'Marcas de Flujo',               hint:'Líneas, ondas o rayas plateadas' },
-    { id:'burbujas',       icon:'💨', name:'Burbujas / Vacíos',             hint:'Ampollas o huecos internos' },
-    { id:'deformacion',    icon:'📐', name:'Deformación / Warpage',         hint:'Pieza torcida, curvada o encogida' },
-    { id:'quemado',        icon:'🔥', name:'Quemado / Degradación',         hint:'Manchas oscuras o material degradado' },
-    { id:'pegado',         icon:'🪤', name:'Pegado en Molde',               hint:'La pieza no desmolda bien' },
-    { id:'lineas_union',   icon:'⚡', name:'Líneas de Unión',               hint:'Línea visible donde flujos se unen' },
-    { id:'manchas_color',  icon:'🎨', name:'Manchas de Color',              hint:'Rayas o manchas de color incorrecto' },
-    { id:'hilos_plateados',icon:'💦', name:'Hilos Plateados (Splay)',       hint:'Rayas plateadas por humedad en material' },
-    { id:'puntos_negros',  icon:'⚫', name:'Puntos Negros',                 hint:'Partículas carbonizadas en la pieza' },
-    { id:'fractura',       icon:'💥', name:'Fractura / Fragilidad',         hint:'Pieza se rompe o es muy frágil' },
-    { id:'hilos_stringing',icon:'🧵', name:'Hilos / Stringing',             hint:'Filamentos de material al abrir el molde' },
-    { id:'baja_densidad',  icon:'🧽', name:'Baja Densidad / Porosidad',     hint:'Pieza esponjosa o más liviana' },
-    { id:'contaminacion',  icon:'🔵', name:'Contaminación del Material',    hint:'Material extraño o inclusiones en la pieza' },
-    { id:'inestabilidad',  icon:'📊', name:'Inestabilidad Dimensional',     hint:'Dimensiones variables o fuera de tolerancia' },
-    { id:'opacidad',       icon:'🔅', name:'Opacidad / Brillo Inconsistente',hint:'Superficie opaca o brillo irregular' },
-  ];
-
   const html = `
     <div class="step-card">
       <div class="step-header">
@@ -1725,11 +1703,11 @@ function renderDefectSelector() {
       <div class="step-question">¿Qué defecto observas en la pieza?</div>
       <div class="step-context">Selecciona el defecto más parecido a lo que ves. Si no estás seguro, revisa la <strong>Guía de Identificación</strong> en la pantalla de inicio.</div>
       <div class="step-options">
-        ${defects.map(d => `
+        ${db.defectCategories.map(d => `
           <button class="opt-btn" onclick="selectTree('${d.id}')">
             <div class="opt-icon">${d.icon}</div>
             <div class="opt-text">
-              <span class="opt-label">${d.name}</span>
+              <span class="opt-label">${d.label}</span>
               <span class="opt-hint">${d.hint}</span>
             </div>
             <span class="opt-arrow">›</span>
@@ -1738,6 +1716,17 @@ function renderDefectSelector() {
       </div>
     </div>`;
   document.getElementById('diag-content').innerHTML = html;
+}
+
+// Puebla el <select id="f-cat"> del formulario con las mismas 18 categorías
+function populateCategoryDropdown() {
+  const sel = document.getElementById('f-cat');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Seleccionar...</option>' +
+    db.defectCategories.map(d => `<option value="${d.label}">${d.icon} ${d.label}</option>`).join('') +
+    '<option value="Otro">Otro</option>';
+  if (current) sel.value = current;
 }
 
 function selectTree(treeId) {
@@ -1875,12 +1864,13 @@ function toggleLevel(header) {
   block.classList.toggle('open');
 }
 
-function saveLog() {
+async function saveLog() {
   const { tree, stepId } = diagState;
   if (!tree || !tree.results[stepId]) return;
   const res = tree.results[stepId];
+  const tsCount = db.records.filter(r => (r.id || '').startsWith('TS-')).length;
   const record = {
-    id: 'TS-' + String(db.records.length + 1).padStart(3,'0'),
+    id: 'TS-' + String(tsCount + 1).padStart(3,'0'),
     fecha: new Date().toISOString().split('T')[0],
     categoria: tree.label,
     severidad: res.badge === 'critical' ? 'alta' : res.badge === 'warning' ? 'media' : 'baja',
@@ -1890,12 +1880,15 @@ function saveLog() {
     parametro: res.params?.[0]?.[0] || '',
     valor_anterior: res.params?.[0]?.[1] || '',
     valor_nuevo: res.params?.[0]?.[2] || '',
-    material: '', tecnico: ''
+    material: '',
+    tecnico: currentProfile?.display_name || '',
   };
-  db.records.push(record);
-  saveRecords();
+
+  const { error } = await supabaseClient.from('records').insert(record);
+  if (error) { showToast('⚠ Error al guardar: ' + error.message, 'warning'); return; }
+
+  db.records.unshift(record);
   updateStats();
-  sendToSheets({ sheet: 'troubleshooting_general', ...record });
   document.getElementById('log-saved').style.display = 'inline';
   showToast('✓ Diagnóstico guardado', 'success');
 }
@@ -2670,139 +2663,24 @@ const TREES = {
 
 
 // ══════════════════════════════════════════════════════════
-// MOLD SECTION — siempre lee directo de Sheets si está conectado
+// MOLD SECTION — filtra sobre db.moldRecords (cargado desde Supabase)
 // ══════════════════════════════════════════════════════════
 
 function showAllMolds() {
-  const el = document.getElementById('mold-list');
-  if (!el) return;
-
-  if (SHEETS_URL) {
-    el.innerHTML = `<div style="padding:30px;text-align:center;color:var(--text3);font-family:var(--mono);font-size:13px;">
-      ⟳ Cargando datos desde Google Sheets...
-    </div>`;
-
-    // Timestamp para evitar caché del navegador
-    const targetUrl = SHEETS_URL + (SHEETS_URL.includes('?') ? '&' : '?') + 'accion=moldes&t=' + Date.now();
-    const url = targetUrl;
-
-    fetch(url)
-      .then(r => r.text())
-      .then(text => {
-        let data;
-        try { data = JSON.parse(text); }
-        catch(e) {
-          const match = text.match(/\{[\s\S]*\}/);
-          data = match ? JSON.parse(match[0]) : null;
-        }
-
-        if (data && Array.isArray(data.moldes)) {
-          // ── Sheets es la fuente de verdad absoluta ──
-          // Si algo fue borrado en Sheets, NO aparece en la app.
-          // Solo mostramos exactamente lo que Sheets tiene.
-          const fromSheets = data.moldes
-            .filter(r => r && (r.problema || r.PROBLEMA))
-            .map(r => normalizeMold(r));
-
-          // Reemplazar completamente — sin merge, sin localStorage viejo
-          db.moldRecords = fromSheets;
-          saveMoldRecords();
-          updateStats();
-        }
-
-        const q = document.getElementById('mold-input').value.trim().toUpperCase();
-        const toShow = q
-          ? db.moldRecords.filter(r => r.id_molde.toUpperCase().includes(q))
-          : db.moldRecords;
-        renderMolds(toShow);
-
-        document.getElementById('status-sync').textContent =
-          new Date().toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'});
-      })
-      .catch(() => {
-        // Sin conexión: muestra lo que hay en localStorage con aviso
-        el.innerHTML = `<div style="padding:16px 20px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:13px;color:#92400e;">
-          ⚠️ <strong>Sin conexión a Google Sheets.</strong> Mostrando datos guardados localmente.
-          Puede que no estén actualizados — algunos registros borrados en Sheets pueden seguir apareciendo aquí.
-          <br><br><button class="btn btn-outline" style="font-size:12px;" onclick="showAllMolds()">🔄 Reintentar</button>
-        </div>`;
-        setTimeout(() => renderMolds(db.moldRecords), 2000);
-      });
-
-  } else {
-    // Sin Sheets configurado: mostrar datos locales con aviso
-    if (db.moldRecords.length === 0) {
-      document.getElementById('mold-list').innerHTML = `<div class="card" style="padding:24px;text-align:center;color:var(--text3);">
-        <div style="font-size:14px;margin-bottom:12px;">No hay datos de molde disponibles.</div>
-        <div style="font-size:12px;margin-bottom:16px;">Conecta Google Sheets para ver registros en tiempo real.</div>
-        <button class="btn btn-primary" onclick="showPage('admin');showTab('t-gsheet')">🔗 Conectar Google Sheets</button>
-      </div>`;
-    } else {
-      renderMolds(db.moldRecords);
-    }
-  }
+  const q = (document.getElementById('mold-input')?.value || '').trim().toUpperCase();
+  renderMolds(q ? db.moldRecords.filter(r => r.id_molde.toUpperCase().includes(q)) : db.moldRecords, q);
 }
 
-// Búsqueda en tiempo real (mientras escribes)
+// Búsqueda en tiempo real (mientras escribes), con debounce corto
 let searchMoldTimeout;
 function searchMoldLive() {
   clearTimeout(searchMoldTimeout);
-  const q = document.getElementById('mold-input').value.trim();
-
-  if (!q) {
-    showAllMolds();
-    return;
-  }
-
-  // Esperar 300ms antes de buscar (debounce para no sobrecargar)
-  searchMoldTimeout = setTimeout(() => {
-    searchMold();
-  }, 300);
+  searchMoldTimeout = setTimeout(searchMold, 150);
 }
 
 function searchMold() {
   const q = document.getElementById('mold-input').value.trim().toUpperCase();
-  if (!q) { showAllMolds(); return; }
-
-  if (SHEETS_URL) {
-    const el = document.getElementById('mold-list');
-    el.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text3);font-family:var(--mono);font-size:13px;">⟳ Buscando en Google Sheets...</div>`;
-
-    // Buscar directo en Sheets — no usar caché local para la búsqueda
-    const targetUrl = SHEETS_URL + (SHEETS_URL.includes('?') ? '&' : '?') +
-      'accion=buscar_molde&molde=' + encodeURIComponent(q) + '&t=' + Date.now();
-    const url = targetUrl;
-
-    fetch(url)
-      .then(r => r.text())
-      .then(text => {
-        let data;
-        try { data = JSON.parse(text); }
-        catch(e) {
-          const match = text.match(/\{[\s\S]*\}/);
-          data = match ? JSON.parse(match[0]) : null;
-        }
-
-        if (data && Array.isArray(data.moldes)) {
-          // Solo mostrar lo que Sheets devuelve — no mezclar con local
-          const recs = data.moldes
-            .filter(r => r && (r.problema || r.PROBLEMA))
-            .map(r => normalizeMold(r));
-          renderMolds(recs, q);
-        } else {
-          renderMolds([], q);
-        }
-      })
-      .catch(() => {
-        // Fallback sin red: filtrar local con aviso
-        el.innerHTML = `<div style="padding:12px 16px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;margin-bottom:10px;">
-          ⚠️ Sin conexión a Sheets — búsqueda en datos locales (pueden no estar actualizados)
-        </div>`;
-        setTimeout(() => renderMolds(db.moldRecords.filter(r => r.id_molde.toUpperCase().includes(q)), q), 100);
-      });
-  } else {
-    renderMolds(db.moldRecords.filter(r => r.id_molde.toUpperCase().includes(q)), q);
-  }
+  renderMolds(q ? db.moldRecords.filter(r => r.id_molde.toUpperCase().includes(q)) : db.moldRecords, q);
 }
 
 document.addEventListener('keydown', e => {
@@ -2851,41 +2729,49 @@ function closeModal() { document.getElementById('modal-bg').classList.remove('op
 // ══════════════════════════════════════════════════════════
 // ADMIN FORMS
 // ══════════════════════════════════════════════════════════
-function submitRecord() {
+async function submitRecord() {
   const fields = ['f-cat','f-sev','f-symptom','f-cause','f-solution'];
   const vals = fields.map(id => document.getElementById(id).value.trim());
   if (vals.some(v => !v)) { showToast('⚠ Completa los campos requeridos (*)', 'warning'); return; }
 
+  const materialSel = document.getElementById('f-material').value;
+  const material = materialSel === 'Otro' ? document.getElementById('f-material-other').value.trim() : materialSel;
+
+  const tsCount = db.records.filter(r => (r.id || '').startsWith('TS-')).length;
   const record = {
-    id: 'TS-' + String(db.records.length + 1).padStart(3,'0'),
+    id: 'TS-' + String(tsCount + 1).padStart(3,'0'),
     fecha: new Date().toISOString().split('T')[0],
     categoria: vals[0], severidad: vals[1], sintoma: vals[2],
     causa_raiz: vals[3], solucion: vals[4],
     parametro: document.getElementById('f-param').value,
-    valor_anterior: (document.getElementById('f-values').value.split('→')[0]||'').trim(),
-    valor_nuevo:    (document.getElementById('f-values').value.split('→')[1]||'').trim(),
-    material: document.getElementById('f-material').value,
+    valor_anterior: document.getElementById('f-val-old').value.trim(),
+    valor_nuevo:    document.getElementById('f-val-new').value.trim(),
+    material,
     tecnico:  document.getElementById('f-tech').value,
   };
 
-  db.records.push(record);
-  saveRecords();
+  const { error } = await supabaseClient.from('records').insert(record);
+  if (error) { showToast('⚠ Error al guardar: ' + error.message, 'warning'); return; }
+
+  db.records.unshift(record);
   updateStats();
-  sendToSheets({ sheet:'troubleshooting_general', ...record });
 
   const msg = document.getElementById('rec-msg');
   msg.style.display = 'inline';
   setTimeout(() => msg.style.display = 'none', 3000);
   clearForm();
-  showToast('✓ Registro guardado y enviado a Google Sheets', 'success');
+  renderRecordsTable();
+  showToast('✓ Registro guardado', 'success');
 }
 
 function clearForm() {
-  ['f-cat','f-sev','f-symptom','f-cause','f-solution','f-param','f-values','f-material','f-tech']
+  ['f-cat','f-sev','f-symptom','f-cause','f-solution','f-param','f-val-old','f-val-new','f-material','f-material-other']
     .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('f-material-other').style.display = 'none';
+  // El técnico se mantiene precargado con el usuario de la sesión.
 }
 
-function submitMold() {
+async function submitMold() {
   const num  = document.getElementById('m-num').value.trim();
   const prob = document.getElementById('m-problem').value.trim();
   if (!num || !prob) { showToast('⚠ Número de molde y problema son requeridos', 'warning'); return; }
@@ -2900,17 +2786,18 @@ function submitMold() {
     severidad:   document.getElementById('m-sev').value,
   };
 
-  db.moldRecords.push(rec);
-  saveMoldRecords();
+  const { data, error } = await supabaseClient.from('mold_records').insert(rec).select().single();
+  if (error) { showToast('⚠ Error al guardar: ' + error.message, 'warning'); return; }
+
+  db.moldRecords.unshift(data);
   updateStats();
-  sendToSheets({ sheet:'problemas_por_molde', ...rec });
 
   const msg = document.getElementById('mold-msg');
   msg.style.display = 'inline';
   setTimeout(() => msg.style.display = 'none', 3000);
   ['m-num','m-date','m-problem','m-diag','m-action'].forEach(id => document.getElementById(id).value = '');
   showToast('✓ Registro de molde guardado', 'success');
-  updateStats();
+  renderMoldRecordsTable();
 }
 
 function renderRecordsTable() {
@@ -2924,6 +2811,7 @@ function renderRecordsTable() {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text4);padding:20px;">No hay registros aún</td></tr>';
     return;
   }
+  const isAdmin = currentProfile?.role === 'admin';
   tbody.innerHTML = db.records.slice().reverse().map(r => `
     <tr id="row-${r.id}">
       <td style="color:var(--ep-blue);font-weight:700;font-family:var(--mono);">${r.id}</td>
@@ -2933,11 +2821,11 @@ function renderRecordsTable() {
       <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.sintoma}</td>
       <td style="color:var(--text3);">${r.tecnico||'—'}</td>
       <td>
-        <button onclick="confirmDelete('${r.id}','general')"
+        ${isAdmin ? `<button onclick="confirmDelete('${r.id}','general')"
           style="background:none;border:1px solid #fecaca;color:var(--red);font-size:11px;padding:3px 10px;border-radius:5px;cursor:pointer;font-family:var(--mono);transition:all 0.15s;"
           onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
           🗑 Borrar
-        </button>
+        </button>` : ''}
       </td>
     </tr>`).join('');
 }
@@ -2950,23 +2838,23 @@ function renderMoldRecordsTable() {
     wrap.innerHTML = '<p style="padding:14px;color:var(--text4);font-size:13px;">No hay registros de molde aún.</p>';
     return;
   }
+  const isAdmin = currentProfile?.role === 'admin';
   wrap.innerHTML = `<table class="schema-tbl">
     <thead><tr><th>MOLDE</th><th>FECHA</th><th>PROBLEMA</th><th>ESTADO</th><th>SEV.</th><th>ACCIONES</th></tr></thead>
     <tbody>
       ${db.moldRecords.slice().reverse().map(r => {
-        const key = encodeURIComponent(r.id_molde + '|' + r.fecha + '|' + r.problema);
-        return `<tr id="mrow-${key}">
+        return `<tr id="mrow-${r.id}">
           <td style="color:var(--ep-blue);font-weight:700;">${r.id_molde}</td>
           <td style="font-family:var(--mono);font-size:12px;">${r.fecha}</td>
           <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.problema}</td>
           <td><span class="pill ${r.estado==='resuelto'?'pill-green':r.estado==='en_proceso'?'pill-amber':'pill-red'}">${r.estado.replace('_',' ').toUpperCase()}</span></td>
           <td><span class="pill ${r.severidad==='alta'?'pill-red':r.severidad==='media'?'pill-amber':'pill-green'}">${r.severidad.toUpperCase()}</span></td>
           <td>
-            <button onclick="confirmDelete('${key}','mold')"
+            ${isAdmin ? `<button onclick="confirmDelete('${r.id}','mold')"
               style="background:none;border:1px solid #fecaca;color:var(--red);font-size:11px;padding:3px 10px;border-radius:5px;cursor:pointer;font-family:var(--mono);transition:all 0.15s;"
               onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
               🗑 Borrar
-            </button>
+            </button>` : ''}
           </td>
         </tr>`;
       }).join('')}
@@ -2975,34 +2863,30 @@ function renderMoldRecordsTable() {
 }
 
 // ── Confirm + execute delete ──
-function confirmDelete(idOrKey, type) {
-  const label = type === 'general' ? `el registro ${idOrKey}` : `el registro de molde seleccionado`;
-  if (!confirm(`¿Seguro que deseas borrar ${label}?
-
-Esto lo eliminará de la app y también de Google Sheets si está conectado.`)) return;
-  deleteRecord(idOrKey, type);
+function confirmDelete(id, type) {
+  const label = type === 'general' ? `el registro ${id}` : `el registro de molde seleccionado`;
+  if (!confirm(`¿Seguro que deseas borrar ${label}? Esta acción no se puede deshacer.`)) return;
+  deleteRecord(id, type);
 }
 
-function deleteRecord(idOrKey, type) {
-  if (type === 'general') {
-    db.records = db.records.filter(r => r.id !== idOrKey);
-    saveRecords();
-    deleteFromSheets(idOrKey, 'general');
-    // Remove row from DOM immediately
-    const row = document.getElementById('row-' + idOrKey);
-    if (row) { row.style.opacity = '0.3'; setTimeout(() => row.remove(), 300); }
-    showToast('🗑 Registro ' + idOrKey + ' eliminado', '');
+async function deleteRecord(id, type) {
+  if (currentProfile?.role !== 'admin') {
+    showToast('⚠ Solo un administrador puede borrar registros', 'warning');
+    return;
+  }
 
+  const table = type === 'general' ? 'records' : 'mold_records';
+  const { error } = await supabaseClient.from(table).delete().eq('id', id);
+  if (error) { showToast('⚠ Error al borrar: ' + error.message, 'warning'); return; }
+
+  if (type === 'general') {
+    db.records = db.records.filter(r => r.id !== id);
+    const row = document.getElementById('row-' + id);
+    if (row) { row.style.opacity = '0.3'; setTimeout(() => row.remove(), 300); }
+    showToast('🗑 Registro ' + id + ' eliminado', '');
   } else {
-    // idOrKey is encoded "id_molde|fecha|problema"
-    const decoded = decodeURIComponent(idOrKey);
-    const [id_molde, fecha, problema] = decoded.split('|');
-    db.moldRecords = db.moldRecords.filter(r =>
-      !(r.id_molde === id_molde && r.fecha === fecha && r.problema === problema)
-    );
-    saveMoldRecords();
-    deleteFromSheets(decoded, 'mold');
-    const row = document.getElementById('mrow-' + idOrKey);
+    db.moldRecords = db.moldRecords.filter(r => r.id !== id);
+    const row = document.getElementById('mrow-' + id);
     if (row) { row.style.opacity = '0.3'; setTimeout(() => { row.remove(); }, 300); }
     showToast('🗑 Registro de molde eliminado', '');
   }
@@ -3012,1387 +2896,36 @@ function deleteRecord(idOrKey, type) {
   renderMoldRecordsTable();
 }
 
-function deleteFromSheets(idOrKey, type) {
-  if (!SHEETS_URL) return;
-  fetch(SHEETS_URL + {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'delete', type: type, key: idOrKey })
-  }).catch(() => {});
-}
+// (Antiguo bloque de sincronización con Google Sheets — eliminado.
+//  Ahora todo se lee/escribe directo en Supabase, ver loadInitialData()
+//  y las funciones submitRecord/submitMold/deleteRecord más arriba.)
 
-// ══════════════════════════════════════════════════════════
-// GOOGLE SHEETS SYNC
-// ══════════════════════════════════════════════════════════
-let SHEETS_URL = "https://script.google.com/macros/s/AKfycbw_eTpORrKEBry7gmDYLSK_jWLCtHctxDeAkcTIif3XwR_chmyZdOn127qwXE_kBV8eRQ/exec";
-
-// Restore URL on load and auto-sync if configured
-window.addEventListener('DOMContentLoaded', () => {
-  const inp = document.getElementById('gs-url');
-  const st = document.getElementById('gs-status');
-  if (inp && SHEETS_URL) {
-    inp.value = SHEETS_URL;
-    inp.disabled = true;
-    if (st) {
-      st.style.color = 'var(--green)';
-      st.textContent = '✓ Usando almacenamiento local. Los datos se guardan en tu navegador.';
-    }
-  }
-  // Load data from localStorage (fallback si Google Sheets no funciona)
-  if (window.moldesData && window.moldesData.length > 0) {
-    renderMoldRecordsTable();
-  }
-});
-
-// ─── CONNECT ─────────────────────────────────────────────
-function connectSheet() {
-  const url = document.getElementById('gs-url').value.trim();
-  const st  = document.getElementById('gs-status');
-  if (!url.includes('script.google.com/macros') && !url.includes('docs.google.com')) {
-    st.style.color = 'var(--red)';
-    st.textContent = '✕ URL inválida. Pega la URL de Apps Script (script.google.com/macros/...).';
-    return;
-  }
-  SHEETS_URL = url;
-  localStorage.setItem(KEYS.sheetsUrl, url);
-  st.style.color = 'var(--text3)';
-  st.textContent = '⟳ Conectando...';
-  loadFromSheets(false, st);
-}
-
-// ─── LOAD FROM SHEETS via JSONP (evita CORS completamente) ───
-function loadFromSheets(silent, statusEl) {
-  if (!SHEETS_URL) return;
-  const st = statusEl || document.getElementById('gs-status');
-
-  // Limpiar script JSONP anterior si existe
-  const old = document.getElementById('_jsonp_script');
-  if (old) old.remove();
-
-  // Crear callback global único
-  const cbName = '_sm_cb_' + Date.now();
-
-  window[cbName] = function(data) {
-    // Limpiar
-    delete window[cbName];
-    const s = document.getElementById('_jsonp_script');
-    if (s) s.remove();
-
-    try {
-      processSheetsData(data, silent, st);
-    } catch(e) {
-      if (st) { st.style.color='var(--yellow)'; st.textContent='⚠ Error al procesar datos: ' + e.message; }
-    }
-  };
-
-  // Inyectar script JSONP
-  const script = document.createElement('script');
-  script.id  = '_jsonp_script';
-  const sep  = SHEETS_URL.includes('?') ? '&' : '?';
-  script.src = SHEETS_URL + sep + 'accion=moldes&callback=' + cbName + '&t=' + Date.now();
-
-  script.onerror = function() {
-    delete window[cbName];
-    document.getElementById('_jsonp_script')?.remove();
-    // Fallback: intentar fetch normal
-    fetchFallback(silent, st);
-  };
-
-  document.head.appendChild(script);
-
-  // Timeout de 10 segundos
-  setTimeout(() => {
-    if (window[cbName]) {
-      delete window[cbName];
-      document.getElementById('_jsonp_script')?.remove();
-      fetchFallback(silent, st);
-    }
-  }, 10000);
-}
-
-// ─── FALLBACK con fetch normal ────────────────────────────
-function fetchFallback(silent, st) {
-  const sep = SHEETS_URL.includes('?') ? '&' : '?';
-  const targetUrl = SHEETS_URL + sep + 'accion=moldes&t=' + Date.now();
-  fetch(CORS_PROXY + encodeURIComponent(targetUrl))
-    .then(r => r.json())
-    .then(proxyResp2 => {
-      const text = proxyResp2.contents;
-      let data;
-      try { data = JSON.parse(text); }
-      catch(e) {
-        const m = text.match(/\{[\s\S]*\}/);
-        if (m) data = JSON.parse(m[0]);
-        else throw new Error('No se pudo parsear la respuesta');
-      }
-      processSheetsData(data, silent, st);
-    })
-    .catch(err => {
-      const msg = '⚠ Sin conexión a Sheets. Verifica: 1) El script está desplegado, 2) Acceso = "Cualquier persona", 3) Redesplegaste como nueva versión.';
-      if (st) { st.style.color = 'var(--yellow)'; st.textContent = msg; }
-      if (!silent) showToast('⚠ No se pudo conectar con Google Sheets', 'warning');
-    });
-}
-
-// ─── PROCESS AND MERGE DATA ───────────────────────────────
-function processSheetsData(data, silent, st) {
-  if (!data || data.status === 'error') {
-    const msg = '⚠ Error en el script: ' + (data?.mensaje || 'desconocido');
-    if (st) { st.style.color = 'var(--yellow)'; st.textContent = msg; }
-    return;
-  }
-
-  // ── General records ──
-  const incoming = data.general || data.datos || [];
-  if (Array.isArray(incoming)) {
-    const sheetsIds = new Set();
-    const sheetsRecs = incoming
-      .filter(row => row && (row.sintoma || row.SINTOMA))
-      .map(row => { const r = normalizeRecord(row); sheetsIds.add(r.id); return r; });
-
-    // Keep local records whose id doesn't exist in Sheets yet
-    const localOnly = db.records.filter(r => r.id && !sheetsIds.has(r.id));
-    db.records = [...sheetsRecs, ...localOnly];
-    saveRecords();
-  }
-
-  // ── Mold records: Sheets reemplaza completamente lo local ──
-  // Si se borró en Sheets, desaparece de la app. Sin merge, sin caché viejo.
-  const inMolds = data.moldes || [];
-  if (Array.isArray(inMolds)) {
-    const sheetsMolds = inMolds
-      .filter(row => row && (row.problema || row.PROBLEMA))
-      .map(row => normalizeMold(row));
-    db.moldRecords = sheetsMolds;   // reemplazo total
-    saveMoldRecords();
-  }
-
-  updateStats();
-
-  const totalG = (data.general || []).length;
-  const totalM = (data.moldes  || []).length;
-  const msg = `✓ Sincronizado — ${totalG} registros generales, ${totalM} registros de molde desde Google Sheets.`;
-  if (st) { st.style.color = 'var(--ep-green)'; st.textContent = msg; }
-  if (!silent) showToast('✓ Datos actualizados desde Google Sheets', 'success');
-
-  const syncEl = document.getElementById('status-sync');
-  if (syncEl) syncEl.textContent = new Date().toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'});
-
-  // Refresh UI en la página activa
-  renderRecordsTable();
-  const moldPage = document.getElementById('page-mold');
-  if (moldPage && moldPage.style.display !== 'none') showAllMolds();
-}
-
-// ─── NORMALIZE ────────────────────────────────────────────
-function normalizeRecord(row) {
-  return {
-    id:             String(row.id || row.ID || ('TS-' + String(db.records.length + 1).padStart(3,'0'))),
-    fecha:          String(row.fecha || row.FECHA || ''),
-    categoria:      String(row.categoria || row.CATEGORIA || ''),
-    severidad:      String(row.severidad || row.SEVERIDAD || 'media').toLowerCase(),
-    sintoma:        String(row.sintoma || row.SINTOMA || ''),
-    causa_raiz:     String(row.causa_raiz || row.CAUSA_RAIZ || ''),
-    solucion:       String(row.solucion || row.SOLUCION || ''),
-    parametro:      String(row.parametro || row.PARAMETRO || ''),
-    valor_anterior: String(row.valor_anterior || row.VALOR_ANTERIOR || ''),
-    valor_nuevo:    String(row.valor_nuevo || row.VALOR_NUEVO || ''),
-    material:       String(row.material || row.MATERIAL || ''),
-    tecnico:        String(row.tecnico || row.TECNICO || ''),
-  };
-}
-
-function normalizeMold(row) {
-  return {
-    id_molde:    String(row.id_molde || row.ID_MOLDE || '').toUpperCase().trim(),
-    fecha:       String(row.fecha || row.FECHA || ''),
-    problema:    String(row.problema || row.PROBLEMA || ''),
-    diagnostico: String(row.diagnostico || row.DIAGNOSTICO || ''),
-    accion:      String(row.accion || row.ACCION || ''),
-    estado:      String(row.estado || row.ESTADO || 'abierto').toLowerCase().replace(/\s/g,'_'),
-    severidad:   String(row.severidad || row.SEVERIDAD || 'media').toLowerCase(),
-  };
-}
-
-// ─── SEND TO SHEETS (POST) ────────────────────────
-function sendToSheets(payload) {
-  if (!SHEETS_URL) return;
-  fetch(SHEETS_URL + {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }).catch(() => {});
-}
-
-// ─── SYNC NOW (botón manual) ──────────────────────────────
-function syncNow() {
-  const btn = document.getElementById('sync-btn');
-  if (btn) { btn.innerHTML = '⟳ Sincronizando...'; btn.disabled = true; }
-  const ind = document.getElementById('sync-indicator');
-  if (ind) ind.style.display = 'inline';
-
-  const st = document.getElementById('gs-status');
-  loadFromSheets(false, st);
-
-  // Re-enable button after 6 seconds max
-  setTimeout(() => {
-    if (btn) { btn.innerHTML = '<span>🔄</span> Sincronizar'; btn.disabled = false; }
-    if (ind) ind.style.display = 'none';
-  }, 6000);
-}
-
-
-// ══════════════════════════════════════════════════════════
-// BASE DE DATOS — Excel "Solucionador Organizado" (Rodolfo)
-// 21 defectos · 78 registros · integrado automáticamente
-// ══════════════════════════════════════════════════════════
-const EXCEL_DB = [
-  {
-    "id": "TSE-01A",
-    "fecha": "2025-01-01",
-    "categoria": "Rechupe / Hundimiento",
-    "severidad": "media",
-    "sintoma": "Rechupe (Sink marks)",
-    "causa_raiz": "A. Presión de compactación insuficiente",
-    "solucion": "Aumentar la presión de empaque dentro del rango seguro del molde | Aumentar el tiempo de empaque para compensar contracción | Implementar un perfil de compactación escalonado en lugar de un valor fijo",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-01B",
-    "fecha": "2025-01-01",
-    "categoria": "Rechupe / Hundimiento",
-    "severidad": "media",
-    "sintoma": "Rechupe (Sink marks)",
-    "causa_raiz": "B. Tiempo de compactación muy corto",
-    "solucion": "Aumentar el tiempo de empaque hasta que se selle el gate | Ajustar el enfriamiento para un empaque más largo sin alargar ciclo total",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-01C",
-    "fecha": "2025-01-01",
-    "categoria": "Rechupe / Hundimiento",
-    "severidad": "media",
-    "sintoma": "Rechupe (Sink marks)",
-    "causa_raiz": "C. Temperatura de molde demasiado alta",
-    "solucion": "Reducir la temperatura del molde | Aumentar el caudal de agua en circuitos de enfriamiento",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-02A",
-    "fecha": "2025-01-01",
-    "categoria": "Marcas de Flujo",
-    "severidad": "media",
-    "sintoma": "Marcas de flujo (Flow lines)",
-    "causa_raiz": "A. Baja velocidad de inyección",
-    "solucion": "Aumentar la velocidad de inyección para llenar más rápido la pieza | Ajustar el perfil de velocidad para mantener un flujo constante",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-02B",
-    "fecha": "2025-01-01",
-    "categoria": "Marcas de Flujo",
-    "severidad": "media",
-    "sintoma": "Marcas de flujo (Flow lines)",
-    "causa_raiz": "B. Temperatura de masa muy baja",
-    "solucion": "Revisar las resistencias del cañón | Incrementar la temperatura del cañón y la boquilla | Reducir la velocidad del tornillo para mejor fusión del material",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-02C",
-    "fecha": "2025-01-01",
-    "categoria": "Marcas de Flujo",
-    "severidad": "media",
-    "sintoma": "Marcas de flujo (Flow lines)",
-    "causa_raiz": "C. Presión de inyección insuficiente",
-    "solucion": "Incrementar la presión de inyección para compactar mejor el material | Aumentar la presión de empaque para reducir líneas visibles | Revisar tiempo de empaque para evitar pérdida de compactación",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-02D",
-    "fecha": "2025-01-01",
-    "categoria": "Marcas de Flujo",
-    "severidad": "media",
-    "sintoma": "Marcas de flujo (Flow lines)",
-    "causa_raiz": "D. Humedad en el material",
-    "solucion": "Verificar el funcionamiento del secador y los filtros | Darle el secado apropiado al material (tiempo/temperatura adecuados)",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-03A",
-    "fecha": "2025-01-01",
-    "categoria": "Vacío / Pieza Incompleta",
-    "severidad": "alta",
-    "sintoma": "Pieza corta / vacías",
-    "causa_raiz": "A. Temperatura de fusión baja",
-    "solucion": "Aumentar las temperaturas en las zonas del cañón | Subir la temperatura de la boquilla para evitar solidificación prematura | Aumentar las rpm del tornillo | Asegurar que la temperatura del molde no sea baja",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-03B",
-    "fecha": "2025-01-01",
-    "categoria": "Vacío / Pieza Incompleta",
-    "severidad": "alta",
-    "sintoma": "Pieza corta / vacías",
-    "causa_raiz": "B. Presión de inyección insuficiente",
-    "solucion": "Incrementar la presión de inyección para mejorar el llenado | Mejorar el tiempo de inyección para asegurar que la cavidad llene bien",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-03C",
-    "fecha": "2025-01-01",
-    "categoria": "Vacío / Pieza Incompleta",
-    "severidad": "alta",
-    "sintoma": "Pieza corta / vacías",
-    "causa_raiz": "C. Velocidad de inyección baja",
-    "solucion": "Aumentar la velocidad de inyección | Verificar que los perfiles de velocidad sean los adecuados | Ajustar la transferencia para que no cambie antes de tiempo",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-03D",
-    "fecha": "2025-01-01",
-    "categoria": "Vacío / Pieza Incompleta",
-    "severidad": "alta",
-    "sintoma": "Pieza corta / vacías",
-    "causa_raiz": "D. Material mal seco o con humedad",
-    "solucion": "Asegurar que el secador funcione correctamente | Mejorar el secado del material (revisar ficha técnica) | Evitar que el material permanezca mucho tiempo en la tolva",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-03E",
-    "fecha": "2025-01-01",
-    "categoria": "Vacío / Pieza Incompleta",
-    "severidad": "alta",
-    "sintoma": "Pieza corta / vacías",
-    "causa_raiz": "E. Ventilación deficiente del molde",
-    "solucion": "Mantener limpias y sin obstrucciones las líneas de venteos | Ajustar parámetros de inyección para evitar atrapamientos de aire",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-04A",
-    "fecha": "2025-01-01",
-    "categoria": "Rebabas / Flash",
-    "severidad": "alta",
-    "sintoma": "Rebabas (Flash)",
-    "causa_raiz": "A. Presión de inyección muy alta",
-    "solucion": "Reducir la presión de inyección | Ajustar el tiempo de inyección para evitar el sobrellenado | Revisar que el punto de transferencia esté bien calibrado",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-04B",
-    "fecha": "2025-01-01",
-    "categoria": "Rebabas / Flash",
-    "severidad": "alta",
-    "sintoma": "Rebabas (Flash)",
-    "causa_raiz": "B. Temperatura de fusión muy alta",
-    "solucion": "Disminuir la temperatura del cilindro (zonas de plastificación) | Reducir la temperatura de la boquilla | Ajustar las rpm del tornillo | Evitar el tiempo de residencia del material en el cañón",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-04C",
-    "fecha": "2025-01-01",
-    "categoria": "Rebabas / Flash",
-    "severidad": "alta",
-    "sintoma": "Rebabas (Flash)",
-    "causa_raiz": "C. Ventilación deficiente",
-    "solucion": "Limpiar correctamente los venteos periódicamente | Pulir las superficies de cierre para un ajuste más hermético",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-04D",
-    "fecha": "2025-01-01",
-    "categoria": "Rebabas / Flash",
-    "severidad": "alta",
-    "sintoma": "Rebabas (Flash)",
-    "causa_raiz": "D. Fuerza de cierre insuficiente",
-    "solucion": "Aumentar la fuerza de cierre en la inyectora | Verificar que el sistema hidráulico de la máquina funcione correctamente",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-04E",
-    "fecha": "2025-01-01",
-    "categoria": "Rebabas / Flash",
-    "severidad": "alta",
-    "sintoma": "Rebabas (Flash)",
-    "causa_raiz": "E. Molde desgastado o dañado",
-    "solucion": "Revisar que los filos en las cavidades no estén golpeados o desgastados",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-05A",
-    "fecha": "2025-01-01",
-    "categoria": "Quemado / Degradación",
-    "severidad": "alta",
-    "sintoma": "Quemaduras (Burn marks)",
-    "causa_raiz": "A. Atrapamiento de aire",
-    "solucion": "Limpiar correctamente los canales de venteo en el molde | Pulir las zonas de cierre para la salida controlada del aire | Disminuir la velocidad de inyección para evitar atrapamientos de aire",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-05B",
-    "fecha": "2025-01-01",
-    "categoria": "Quemado / Degradación",
-    "severidad": "alta",
-    "sintoma": "Quemaduras (Burn marks)",
-    "causa_raiz": "B. Temperatura del material muy elevada",
-    "solucion": "Bajar la temperatura del cilindro en las zonas de plastificación | Reducir la temperatura de la boquilla | Disminuir el tiempo de residencia del material en el cilindro",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-05C",
-    "fecha": "2025-01-01",
-    "categoria": "Quemado / Degradación",
-    "severidad": "alta",
-    "sintoma": "Quemaduras (Burn marks)",
-    "causa_raiz": "C. Velocidad de inyección muy alta",
-    "solucion": "Reducir la velocidad de inyección en la primera fase | Aplicar un llenado en etapas (velocidad baja al inicio, mayor al final) | Ajustar la transferencia para evitar compresión excesiva del aire",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-06A",
-    "fecha": "2025-01-01",
-    "categoria": "Burbujas / Vacíos",
-    "severidad": "media",
-    "sintoma": "Burbujas de aire / vacíos (Air bubbles / Voids)",
-    "causa_raiz": "A. Aire atrapado en cavidades",
-    "solucion": "Limpiar correctamente los canales de venteo en el molde | Pulir las zonas de cierre para la salida controlada del aire | Disminuir la velocidad de inyección para evitar atrapamientos de aire",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-06B",
-    "fecha": "2025-01-01",
-    "categoria": "Burbujas / Vacíos",
-    "severidad": "media",
-    "sintoma": "Burbujas de aire / vacíos (Air bubbles / Voids)",
-    "causa_raiz": "B. Temperatura de fusión muy baja (flujo deficiente)",
-    "solucion": "Aumentar la temperatura del cilindro en las zonas de plastificación | Elevar la temperatura de la boquilla para mejorar el llenado | Verificar que el tiempo de plastificación sea suficiente para fundir homogéneamente",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-06C",
-    "fecha": "2025-01-01",
-    "categoria": "Burbujas / Vacíos",
-    "severidad": "media",
-    "sintoma": "Burbujas de aire / vacíos (Air bubbles / Voids)",
-    "causa_raiz": "C. Presión de inyección o empaque insuficiente",
-    "solucion": "Aumentar presión de sostenimiento | Optimizar perfil de inyección (llenado + empaque) | Extender el tiempo de empaque",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-07A",
-    "fecha": "2025-01-01",
-    "categoria": "Deformación / Warpage",
-    "severidad": "media",
-    "sintoma": "Alabeo / Deformación (Warpage)",
-    "causa_raiz": "A. Parámetros de inyección inadecuados",
-    "solucion": "Aumentar temperatura del material para mejorar la homogeneidad del llenado | Reducir la presión de inyección y ajustar el tiempo de compactación | Bajar la velocidad de inyección para evitar tensiones internas",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-07B",
-    "fecha": "2025-01-01",
-    "categoria": "Deformación / Warpage",
-    "severidad": "media",
-    "sintoma": "Alabeo / Deformación (Warpage)",
-    "causa_raiz": "B. Expulsión incorrecta o temprana de la pieza",
-    "solucion": "Revisar y ajustar el sistema de expulsión para que la pieza salga uniforme | Incrementar el tiempo de enfriamiento antes de la expulsión",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-07C",
-    "fecha": "2025-01-01",
-    "categoria": "Deformación / Warpage",
-    "severidad": "media",
-    "sintoma": "Alabeo / Deformación (Warpage)",
-    "causa_raiz": "C. Enfriamiento desigual en el molde",
-    "solucion": "Reducir la temperatura del molde | Ajustar los tiempos de enfriamiento para que la pieza salga estabilizada",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-08A",
-    "fecha": "2025-01-01",
-    "categoria": "Manchas de Color",
-    "severidad": "media",
-    "sintoma": "Manchas de color (Color streaks)",
-    "causa_raiz": "A. Contaminación del material",
-    "solucion": "Revisar y limpiar tolvas y silos antes de cambiar de material | Purgar bien el cañón con material exclusivo para purgas",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-08B",
-    "fecha": "2025-01-01",
-    "categoria": "Manchas de Color",
-    "severidad": "media",
-    "sintoma": "Manchas de color (Color streaks)",
-    "causa_raiz": "B. Colorante mal dispersado",
-    "solucion": "Ajustar la velocidad de plastificación y temperatura del tornillo para lograr uniformidad | Revisar y ajustar el dosificador del colorante",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-08C",
-    "fecha": "2025-01-01",
-    "categoria": "Manchas de Color",
-    "severidad": "media",
-    "sintoma": "Manchas de color (Color streaks)",
-    "causa_raiz": "C. Residuos en la máquina",
-    "solucion": "Realizar limpieza completa del tornillo | Usar ciclos de purga con material exclusivo para ese fin",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-08D",
-    "fecha": "2025-01-01",
-    "categoria": "Manchas de Color",
-    "severidad": "media",
-    "sintoma": "Manchas de color (Color streaks)",
-    "causa_raiz": "D. Temperaturas de proceso inadecuadas",
-    "solucion": "Revisar perfiles de temperatura a lo largo del cilindro | Ajustar temperatura de fusión según las recomendaciones del fabricante | Controlar temperatura de moldes para evitar enfriamiento desigual",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-09A",
-    "fecha": "2025-01-01",
-    "categoria": "Líneas de Unión",
-    "severidad": "media",
-    "sintoma": "Líneas de soldadura (Weld lines / Knit lines)",
-    "causa_raiz": "A. Temperatura de fusión insuficiente",
-    "solucion": "Incrementar la temperatura del cilindro en la zona de plastificación | Aumentar temperatura del molde en la zona de unión | Reducir la contrapresión para mejorar homogeneidad del fundido",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-09B",
-    "fecha": "2025-01-01",
-    "categoria": "Líneas de Unión",
-    "severidad": "media",
-    "sintoma": "Líneas de soldadura (Weld lines / Knit lines)",
-    "causa_raiz": "B. Velocidad de inyección baja",
-    "solucion": "Aumentar velocidad de inyección para mejorar fusión | Ajustar presión de inyección para mantener continuidad | Optimizar la transición entre inyección y compactación",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-09C",
-    "fecha": "2025-01-01",
-    "categoria": "Líneas de Unión",
-    "severidad": "media",
-    "sintoma": "Líneas de soldadura (Weld lines / Knit lines)",
-    "causa_raiz": "C. Ventilación deficiente",
-    "solucion": "Ajustar fuerza de cierre del molde para permitir venteo sin fugas | Mantener limpios los canales de ventilación",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-10A",
-    "fecha": "2025-01-01",
-    "categoria": "Degradación del Material",
-    "severidad": "media",
-    "sintoma": "Degradación del material (Material degradation)",
-    "causa_raiz": "A. Temperatura excesiva del cilindro",
-    "solucion": "Verificar funcionamiento de resistencias y termopares | Ajustar el perfil de temperaturas según la ficha técnica de la resina | Reducir la contrapresión para evitar sobrecalentamiento | Reducir las rpm del tornillo para evitar mucha fricción del fundido",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-10B",
-    "fecha": "2025-01-01",
-    "categoria": "Degradación del Material",
-    "severidad": "media",
-    "sintoma": "Degradación del material (Material degradation)",
-    "causa_raiz": "B. Tiempo de residencia muy largo",
-    "solucion": "Disminuir la temperatura del cilindro si el ciclo es lento | Reducir el tiempo de plastificación",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-10C",
-    "fecha": "2025-01-01",
-    "categoria": "Degradación del Material",
-    "severidad": "media",
-    "sintoma": "Degradación del material (Material degradation)",
-    "causa_raiz": "C. Velocidades o presiones de plastificación inadecuadas",
-    "solucion": "Reducir la velocidad de giro del husillo | Ajustar la presión de retroceso para evitar cizallamiento excesivo",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-11A",
-    "fecha": "2025-01-01",
-    "categoria": "Encogimiento Excesivo",
-    "severidad": "media",
-    "sintoma": "Encogimiento excesivo (Excessive shrinkage)",
-    "causa_raiz": "A. Temperatura del molde demasiado alta",
-    "solucion": "Reducir la temperatura del molde para acelerar solidificación | Revisar y balancear el sistema de refrigeración",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-11B",
-    "fecha": "2025-01-01",
-    "categoria": "Encogimiento Excesivo",
-    "severidad": "media",
-    "sintoma": "Encogimiento excesivo (Excessive shrinkage)",
-    "causa_raiz": "B. Presión y tiempo de compactación insuficientes",
-    "solucion": "Aumentar la presión de sostenimiento | Prolongar el tiempo de compactación | Optimizar el perfil de inyección (llenado + sostén)",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-11C",
-    "fecha": "2025-01-01",
-    "categoria": "Encogimiento Excesivo",
-    "severidad": "media",
-    "sintoma": "Encogimiento excesivo (Excessive shrinkage)",
-    "causa_raiz": "C. Temperatura de fusión muy alta",
-    "solucion": "Ajustar perfil de temperaturas del cilindro | Reducir contrapresión para evitar sobrecalentamiento | Evitar tiempos de residencia prolongados",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-12A",
-    "fecha": "2025-01-01",
-    "categoria": "Pegado en Molde",
-    "severidad": "alta",
-    "sintoma": "Adherencia al molde (Sticking / Mold sticking)",
-    "causa_raiz": "A. Temperatura del molde demasiado baja",
-    "solucion": "Subir temperatura del molde para evitar contracción excesiva | Usar controladores de temperatura para mayor estabilidad | Balancear temperaturas entre cavidades múltiples",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-12B",
-    "fecha": "2025-01-01",
-    "categoria": "Pegado en Molde",
-    "severidad": "alta",
-    "sintoma": "Adherencia al molde (Sticking / Mold sticking)",
-    "causa_raiz": "B. Presión de inyección / empaque muy alta",
-    "solucion": "Reducir presión de inyección inicial | Disminuir presión de empaque | Ajustar velocidad de inyección para controlar sobrellenado | Usar un perfil de presión escalonado en lugar de presión constante",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-12C",
-    "fecha": "2025-01-01",
-    "categoria": "Pegado en Molde",
-    "severidad": "alta",
-    "sintoma": "Adherencia al molde (Sticking / Mold sticking)",
-    "causa_raiz": "C. Tiempo de enfriamiento insuficiente",
-    "solucion": "Aumentar tiempo de enfriamiento en el ciclo | Mejorar circulación de agua en canales",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-12D",
-    "fecha": "2025-01-01",
-    "categoria": "Pegado en Molde",
-    "severidad": "alta",
-    "sintoma": "Adherencia al molde (Sticking / Mold sticking)",
-    "causa_raiz": "D. Pulido deficiente o rugosidad del molde",
-    "solucion": "Limpiar depósitos y residuos con agentes adecuados (solicitar personal del Taller de moldes) | Proteger contra corrosión con aceites o inhibidores (solicitar personal del Taller de moldes)",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-13A",
-    "fecha": "2025-01-01",
-    "categoria": "Contaminación del Material",
-    "severidad": "media",
-    "sintoma": "Contaminación del material (Material contamination)",
-    "causa_raiz": "A. Materia prima contaminada (polvo, humedad, aceites, etc.)",
-    "solucion": "Usar material virgen o reprocesado controlado y clasificado | Almacenar resina en ambientes cerrados y limpios | Secar adecuadamente el material antes del proceso | Implementar inspección visual del material antes de cargar",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-13B",
-    "fecha": "2025-01-01",
-    "categoria": "Contaminación del Material",
-    "severidad": "media",
-    "sintoma": "Contaminación del material (Material contamination)",
-    "causa_raiz": "B. Sistema de alimentación (tolva, hopper, garganta) sucio",
-    "solucion": "Limpiar regularmente tolvas, ductos y garganta de alimentación | Evitar acumulación de polvo y pellets triturados | Instalar filtros o separadores de polvo en sistemas de transporte neumático",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-13C",
-    "fecha": "2025-01-01",
-    "categoria": "Contaminación del Material",
-    "severidad": "media",
-    "sintoma": "Contaminación del material (Material contamination)",
-    "causa_raiz": "C. Tornillo, cilindro o boquilla con restos de material degradado",
-    "solucion": "Realizar purgas regulares con material purgante adecuado | Evitar permanencia prolongada de resina a alta temperatura | Usar perfiles de calentamiento estables para no degradar material",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-14A",
-    "fecha": "2025-01-01",
-    "categoria": "Inestabilidad Dimensional",
-    "severidad": "media",
-    "sintoma": "Inestabilidad dimensional (Dimensional inconsistency)",
-    "causa_raiz": "A. Enfriamiento desigual o insuficiente en el molde",
-    "solucion": "Asegurar balance térmico en moldes multicavidad | Controlar caudal y temperatura del agua de enfriamiento",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-14B",
-    "fecha": "2025-01-01",
-    "categoria": "Inestabilidad Dimensional",
-    "severidad": "media",
-    "sintoma": "Inestabilidad dimensional (Dimensional inconsistency)",
-    "causa_raiz": "B. Contracción del material",
-    "solucion": "Ajustar tiempo y presión de empaque para compensar contracción | Mantener temperatura del molde constante en todas las cavidades",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-14C",
-    "fecha": "2025-01-01",
-    "categoria": "Inestabilidad Dimensional",
-    "severidad": "media",
-    "sintoma": "Inestabilidad dimensional (Dimensional inconsistency)",
-    "causa_raiz": "C. Variación en parámetros de proceso",
-    "solucion": "Usar controladores de temperatura y presión estables y calibrados | Reducir fluctuaciones en velocidad y presión de inyección",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-15A",
-    "fecha": "2025-01-01",
-    "categoria": "Trampas de Aire",
-    "severidad": "media",
-    "sintoma": "Trampas de aire (Air traps)",
-    "causa_raiz": "A. Ventilación insuficiente en el molde",
-    "solucion": "Revisar y limpiar los venteos actuales para evitar obstrucciones | Asegurar escape de aire por líneas de partición correctamente ajustadas",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-15B",
-    "fecha": "2025-01-01",
-    "categoria": "Trampas de Aire",
-    "severidad": "media",
-    "sintoma": "Trampas de aire (Air traps)",
-    "causa_raiz": "B. Velocidad de inyección demasiado alta",
-    "solucion": "Reducir velocidad de inyección en la fase inicial | Implementar un perfil de inyección en etapas | Verificar que la boquilla y el bebedero no generen turbulencias excesivas",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-15C",
-    "fecha": "2025-01-01",
-    "categoria": "Trampas de Aire",
-    "severidad": "media",
-    "sintoma": "Trampas de aire (Air traps)",
-    "causa_raiz": "C. Temperatura del material o molde incorrecta",
-    "solucion": "Aumentar la temperatura del molde para mejorar flujo y evitar cierre prematuro de venteos | Ajustar temperatura del cilindro para mejorar homogeneidad del material | Evitar sobrecalentamiento que degrade el material y genere gases adicionales",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-16A",
-    "fecha": "2025-01-01",
-    "categoria": "Hilos Plateados / Splay",
-    "severidad": "media",
-    "sintoma": "Hilos plateados por humedad (Splay / Silver streaks)",
-    "causa_raiz": "A. Material mal secado o con humedad excesiva",
-    "solucion": "Secar la resina según especificaciones del proveedor (tiempo, temperatura) | Verificar el contenido de humedad con medidor antes de procesar | Asegurar que el secador esté trabajando correctamente | Evitar tiempos de almacenamiento prolongados en tolvas abiertas",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-16B",
-    "fecha": "2025-01-01",
-    "categoria": "Hilos Plateados / Splay",
-    "severidad": "media",
-    "sintoma": "Hilos plateados por humedad (Splay / Silver streaks)",
-    "causa_raiz": "B. Sistema de secado ineficiente o defectuoso",
-    "solucion": "Revisar funcionamiento del secador | Cambiar filtros y desecantes de forma preventiva para asegurar rendimiento",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-16C",
-    "fecha": "2025-01-01",
-    "categoria": "Hilos Plateados / Splay",
-    "severidad": "media",
-    "sintoma": "Hilos plateados por humedad (Splay / Silver streaks)",
-    "causa_raiz": "C. Condiciones de proceso inadecuadas",
-    "solucion": "Evitar temperaturas de cilindro demasiado altas que generen evaporación súbita | Ajustar velocidad de inyección para reducir turbulencias | Mantener boquillas y zonas calientes limpias | Optimizar contrapresión durante la plastificación",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-17A",
-    "fecha": "2025-01-01",
-    "categoria": "Fractura de Pieza",
-    "severidad": "alta",
-    "sintoma": "Fractura de pieza (Brittleness / Cracking)",
-    "causa_raiz": "A. Parámetros de proceso incorrectos",
-    "solucion": "Reducir presión de inyección o compactación para evitar sobreesfuerzos internos | Ajustar velocidad de inyección para evitar orientaciones moleculares excesivas | Asegurar enfriamiento uniforme y suficiente | Mantener temperaturas de cilindro y molde dentro del rango recomendado",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-17B",
-    "fecha": "2025-01-01",
-    "categoria": "Fractura de Pieza",
-    "severidad": "alta",
-    "sintoma": "Fractura de pieza (Brittleness / Cracking)",
-    "causa_raiz": "B. Material degradado",
-    "solucion": "Verificar condiciones de secado para evitar hidrólisis en materiales higroscópicos | Evitar temperaturas excesivas que degraden la resina durante el proceso",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-17C",
-    "fecha": "2025-01-01",
-    "categoria": "Fractura de Pieza",
-    "severidad": "alta",
-    "sintoma": "Fractura de pieza (Brittleness / Cracking)",
-    "causa_raiz": "C. Enfriamiento demasiado rápido",
-    "solucion": "Aumentar tiempo de enfriamiento para permitir contracción uniforme | Optimizar diseño y limpieza de canales de enfriamiento en el molde | Balancear caudal de agua en moldes multicavidad",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-17D",
-    "fecha": "2025-01-01",
-    "categoria": "Fractura de Pieza",
-    "severidad": "alta",
-    "sintoma": "Fractura de pieza (Brittleness / Cracking)",
-    "causa_raiz": "D. Tensiones internas por sobreempaque",
-    "solucion": "Reducir presión de empaque al mínimo necesario | Ajustar tiempo de empaque para no sobrecargar la pieza | Verificar perfil de presión en etapas en lugar de presión constante",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-17E",
-    "fecha": "2025-01-01",
-    "categoria": "Fractura de Pieza",
-    "severidad": "alta",
-    "sintoma": "Fractura de pieza (Brittleness / Cracking)",
-    "causa_raiz": "E. Temperatura de material demasiado baja",
-    "solucion": "Aumentar temperatura de cilindro dentro del rango recomendado | Incrementar contrapresión para mejorar homogeneidad de plastificación | Reducir velocidad de husillo para evitar degradación parcial",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-18A",
-    "fecha": "2025-01-01",
-    "categoria": "Baja Densidad / Piezas Esponjosas",
-    "severidad": "media",
-    "sintoma": "Baja densidad / piezas esponjosas (Low packing / Porosity)",
-    "causa_raiz": "A. Presión de empaque insuficiente",
-    "solucion": "Aumentar la presión de empaque para asegurar empaque adecuado | Prolongar el tiempo de empaque para compensar contracción | Ajustar el punto de transferencia más adelante para llenar mejor la cavidad | Implementar un perfil de presión escalonado",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-18B",
-    "fecha": "2025-01-01",
-    "categoria": "Baja Densidad / Piezas Esponjosas",
-    "severidad": "media",
-    "sintoma": "Baja densidad / piezas esponjosas (Low packing / Porosity)",
-    "causa_raiz": "B. Tiempo de empaque muy corto",
-    "solucion": "Aumentar tiempo de empaque hasta el sellado del gate | Ajustar enfriamiento para permitir un tiempo de empaque más largo | Revisar balance entre compactación y enfriamiento",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-18C",
-    "fecha": "2025-01-01",
-    "categoria": "Baja Densidad / Piezas Esponjosas",
-    "severidad": "media",
-    "sintoma": "Baja densidad / piezas esponjosas (Low packing / Porosity)",
-    "causa_raiz": "C. Temperatura del material demasiado alta",
-    "solucion": "Reducir temperaturas del cilindro dentro del rango recomendado | Verificar funcionamiento de resistencias y sensores | Disminuir contrapresión excesiva que degrade el material | Implementar purgas regulares para evitar material degradado en husillo",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-18D",
-    "fecha": "2025-01-01",
-    "categoria": "Baja Densidad / Piezas Esponjosas",
-    "severidad": "media",
-    "sintoma": "Baja densidad / piezas esponjosas (Low packing / Porosity)",
-    "causa_raiz": "D. Ventilación deficiente en el molde",
-    "solucion": "Limpiar canales de venteo en zonas críticas | Revisar líneas de partición para permitir microescapes de gas | Reducir velocidad de inyección en la primera fase para permitir salida del aire | Asegurar mantenimiento regular del molde",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-19A",
-    "fecha": "2025-01-01",
-    "categoria": "Hilos / Stringing",
-    "severidad": "media",
-    "sintoma": "Hilos / Stringing",
-    "causa_raiz": "A. Temperatura de boquilla demasiado alta",
-    "solucion": "Reducir la temperatura de la boquilla dentro del rango recomendado | Verificar que la termocupla de la boquilla funcione correctamente | Revisar el perfil de calentamiento para evitar sobrecalentamiento en punta",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-19B",
-    "fecha": "2025-01-01",
-    "categoria": "Hilos / Stringing",
-    "severidad": "media",
-    "sintoma": "Hilos / Stringing",
-    "causa_raiz": "B. Presión de retroceso inadecuada",
-    "solucion": "Reducir la presión de retroceso para evitar exceso de material presurizado | Ajustar la velocidad de dosificación para controlar la plastificación | Establecer un perfil de contrapresión en lugar de un valor fijo | Controlar la cantidad de material dosificado para evitar rebalse",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-19C",
-    "fecha": "2025-01-01",
-    "categoria": "Hilos / Stringing",
-    "severidad": "media",
-    "sintoma": "Hilos / Stringing",
-    "causa_raiz": "C. Fuga de material por mala alineación de boquilla y anillo de centrado",
-    "solucion": "Alinear correctamente la boquilla con el anillo de centrado del molde | Revisar desgaste en el anillo de centrado y reemplazarlo si es necesario | Usar boquillas con el mismo radio de punta que el anillo de centrado | Ajustar presión de cierre de la boquilla contra el molde",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-19D",
-    "fecha": "2025-01-01",
-    "categoria": "Hilos / Stringing",
-    "severidad": "media",
-    "sintoma": "Hilos / Stringing",
-    "causa_raiz": "D. Tiempo de retracción incorrecto",
-    "solucion": "Aumentar la retracción del husillo después de la inyección | Ajustar velocidad de retracción para evitar goteo | Sincronizar el tiempo de retracción con apertura del molde",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-20A",
-    "fecha": "2025-01-01",
-    "categoria": "Puntos Negros",
-    "severidad": "alta",
-    "sintoma": "Puntos negros (Black specks)",
-    "causa_raiz": "A. Material degradado o quemado dentro del cilindro o boquilla",
-    "solucion": "Ajustar y optimizar las temperaturas de las zonas del cilindro y boquilla | Evitar tiempos de residencia excesivos del material | Usar perfiles de calentamiento escalonados para reducir degradación | Verificar el funcionamiento de resistencias y termocuplas | Reducir la velocidad de plastificación si genera fricción excesiva",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-20B",
-    "fecha": "2025-01-01",
-    "categoria": "Puntos Negros",
-    "severidad": "alta",
-    "sintoma": "Puntos negros (Black specks)",
-    "causa_raiz": "B. Residuos carbonizados de ciclos anteriores",
-    "solucion": "Realizar una purga con materiales específicos de limpieza | Evitar arranques en frío sin purgar | Usar resina virgen con aditivos de purga antes de cada cambio de color/material",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-20C",
-    "fecha": "2025-01-01",
-    "categoria": "Puntos Negros",
-    "severidad": "alta",
-    "sintoma": "Puntos negros (Black specks)",
-    "causa_raiz": "C. Exceso de temperatura en zonas del cilindro o boquilla",
-    "solucion": "Revisar perfiles de temperatura y bajarlos en zonas críticas | Evitar mantener la máquina caliente sin producción activa | Corregir resistencias defectuosas que generan puntos calientes | Verificar calibración de termocuplas",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-20D",
-    "fecha": "2025-01-01",
-    "categoria": "Puntos Negros",
-    "severidad": "alta",
-    "sintoma": "Puntos negros (Black specks)",
-    "causa_raiz": "D. Humedad en el material",
-    "solucion": "Asegurarse que el material haya tenido un buen secado antes de la inyección | Revisar que el equipo de secado se encuentre trabajando correctamente | Purgar el material para eliminar humedad residual en el barril",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-20E",
-    "fecha": "2025-01-01",
-    "categoria": "Puntos Negros",
-    "severidad": "alta",
-    "sintoma": "Puntos negros (Black specks)",
-    "causa_raiz": "E. Flujo inadecuado",
-    "solucion": "Ajustar la velocidad de inyección y el perfil del tornillo para un flujo uniforme | Reducir la contrapresión para disminuir la fricción en el barril | Mantener la presión de inyección dentro de los rangos recomendados",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-21A",
-    "fecha": "2025-01-01",
-    "categoria": "Opacidad / Brillo Inconsistente",
-    "severidad": "media",
-    "sintoma": "Opacidad o brillo inconsistente (Gloss variation / Surface dullness)",
-    "causa_raiz": "A. Temperatura de masa plástica inadecuada",
-    "solucion": "Ajustar el perfil de temperaturas de husillo según Ficha Técnica de la resina | Verificar funcionamiento de resistencias y termocuplas | Reducir el tiempo de residencia para evitar degradación | Revisar que no haya zonas frías en el cilindro",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-21B",
-    "fecha": "2025-01-01",
-    "categoria": "Opacidad / Brillo Inconsistente",
-    "severidad": "media",
-    "sintoma": "Opacidad o brillo inconsistente (Gloss variation / Surface dullness)",
-    "causa_raiz": "B. Temperatura del molde incorrecta / desigual",
-    "solucion": "Ajustar temperatura de molde al rango recomendado por el fabricante de la resina | Balancear el flujo de agua en canales de enfriamiento | Precalentar el molde antes del arranque",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-21C",
-    "fecha": "2025-01-01",
-    "categoria": "Opacidad / Brillo Inconsistente",
-    "severidad": "media",
-    "sintoma": "Opacidad o brillo inconsistente (Gloss variation / Surface dullness)",
-    "causa_raiz": "C. Velocidad de inyección incorrecta",
-    "solucion": "Incrementar la velocidad en zonas donde se nota mateado | Reducir velocidad si hay turbulencia y brillo irregular | Utilizar inyección en múltiples etapas para estabilizar flujo",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-21D",
-    "fecha": "2025-01-01",
-    "categoria": "Opacidad / Brillo Inconsistente",
-    "severidad": "media",
-    "sintoma": "Opacidad o brillo inconsistente (Gloss variation / Surface dullness)",
-    "causa_raiz": "D. Presión de empaque incorrecta",
-    "solucion": "Aumentar presión de empaque si hay opacidad por falta de empuje | Reducir presión si se generan manchas brillantes localizadas | Asegurar que el punto de congelamiento del gate sea adecuado",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  },
-  {
-    "id": "TSE-21E",
-    "fecha": "2025-01-01",
-    "categoria": "Opacidad / Brillo Inconsistente",
-    "severidad": "media",
-    "sintoma": "Opacidad o brillo inconsistente (Gloss variation / Surface dullness)",
-    "causa_raiz": "E. Temperatura del molde fuera de rango",
-    "solucion": "Verificar que la temperatura del molde sea la correcta | Verificar el acabado de las cavidades del molde",
-    "parametro": "",
-    "valor_anterior": "",
-    "valor_nuevo": "",
-    "material": "",
-    "tecnico": "Base de datos — Excel Rodolfo"
-  }
-];
-
-// Merge Excel data into db.records WITHOUT overwriting existing records
-(function mergeExcelData() {
-  const existingIds = new Set(db.records.map(r => r.id));
-  let added = 0;
-  EXCEL_DB.forEach(r => {
-    if (!existingIds.has(r.id)) {
-      db.records.push(r);
-      existingIds.add(r.id);
-      added++;
-    }
-  });
-  if (added > 0) {
-    saveRecords();
-    console.log('SmartMold EP: ' + added + ' registros del Excel cargados en la base de datos.');
-  }
-})();
-
-
-// Auto-sync every 5 minutes if URL is configured
-setInterval(() => { if (SHEETS_URL) loadFromSheets(true); }, 5 * 60 * 1000);
 
 
 
 
 // ══════════════════════════════════════════════════════════
-// LOGIN SIMPLE — usuario y contraseña locales
+// LOGIN — Supabase Auth (email + contraseña)
 // ══════════════════════════════════════════════════════════
 
-// Para agregar o cambiar usuarios, edita este objeto:
-const USERS = {
-  'admin':      'Verny48gut.',
-  'soporte':    'electro123',
-};
+let currentProfile = null; // { id, display_name, role }
 
-// Definir qué usuarios son admin
-const ADMIN_USERS = ['admin'];
+async function doLogin() {
+  const email = (document.getElementById('lg-u').value || '').trim().toLowerCase();
+  const pass  = document.getElementById('lg-p').value || '';
+  const err   = document.getElementById('lg-err');
+  const btn   = document.querySelector('.lg-btn');
 
-function doLogin() {
-  const user = (document.getElementById('lg-u').value || '').trim().toLowerCase();
-  const pass = document.getElementById('lg-p').value || '';
-  const err  = document.getElementById('lg-err');
+  if (btn) { btn.disabled = true; btn.textContent = 'Ingresando...'; }
 
-  if (USERS[user] && USERS[user] === pass) {
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+
+  if (btn) { btn.disabled = false; btn.innerHTML = 'Ingresar →'; }
+
+  if (!error) {
     err.style.display = 'none';
-    const screen = document.getElementById('login-screen');
-    screen.classList.add('lg-hiding');
-    setTimeout(function() { screen.remove(); }, 380);
-    sessionStorage.setItem('sm_logged', '1');
-    sessionStorage.setItem('sm_user', user);
-    document.getElementById('status-sync').textContent = '👤 ' + user;
-    updateAdminAccess(user);
   } else {
+    err.textContent = 'Correo o contraseña incorrectos';
     err.style.display = 'block';
     err.style.animation = 'none';
     void err.offsetWidth;
@@ -4402,38 +2935,62 @@ function doLogin() {
   }
 }
 
-// Controlar acceso a Admin según el usuario
-function updateAdminAccess(user) {
-  const isAdmin = ADMIN_USERS.includes(user);
-
-  // Ocultar/mostrar botones de Admin en navegación
-  const adminButtons = document.querySelectorAll('[onclick*="showPage(\'admin\')"]');
-  adminButtons.forEach(btn => {
-    btn.style.display = isAdmin ? 'block' : 'none';
-  });
-
-  // Ocultar/mostrar sección de Admin
-  const adminPage = document.getElementById('page-admin');
-  if (adminPage) {
-    adminPage.style.display = isAdmin ? 'none' : 'none'; // Siempre oculto hasta que lo muestren
-  }
+async function doLogout() {
+  await supabaseClient.auth.signOut();
 }
 
-// Si ya hay sesión activa en esta pestaña, quitar el login
-(function() {
-  if (sessionStorage.getItem('sm_logged') === '1') {
-    var s = document.getElementById('login-screen');
-    if (s) s.remove();
-    var user = sessionStorage.getItem('sm_user');
-    if (user) updateAdminAccess(user);
-  } else {
-    // Auto-focus al usuario
-    setTimeout(function() {
-      var u = document.getElementById('lg-u');
-      if (u) u.focus();
-    }, 250);
+// Carga el perfil (rol) del usuario autenticado y actualiza la UI
+async function loadProfile(user) {
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('id, display_name, role')
+    .eq('id', user.id)
+    .single();
+
+  currentProfile = error ? { id: user.id, display_name: user.email, role: 'tecnico' } : data;
+  updateAdminAccess(currentProfile.role === 'admin');
+
+  const syncEl = document.getElementById('status-sync');
+  if (syncEl) syncEl.textContent = '👤 ' + (currentProfile.display_name || user.email);
+
+  // Precargar el campo Técnico con el usuario de la sesión (sigue editable)
+  const techField = document.getElementById('f-tech');
+  if (techField && !techField.value) techField.value = currentProfile.display_name || user.email;
+}
+
+// Mostrar/ocultar acceso a la sección Admin según el rol
+function updateAdminAccess(isAdmin) {
+  const adminButtons = document.querySelectorAll('[onclick*="showPage(\'admin\')"]');
+  adminButtons.forEach(btn => { btn.style.display = isAdmin ? '' : 'none'; });
+}
+
+function hideLoginScreen() {
+  const screen = document.getElementById('login-screen');
+  if (!screen) return;
+  screen.classList.add('lg-hiding');
+  setTimeout(function() { screen.remove(); }, 380);
+}
+
+function showLoginScreen() {
+  if (document.getElementById('login-screen')) return;
+  location.reload(); // Forma simple y segura de volver a la pantalla de login tras signOut
+}
+
+// Reacciona a cambios de sesión (login, logout, token refresh, sesión ya activa al cargar)
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (session && session.user) {
+    hideLoginScreen();
+    loadProfile(session.user).then(() => loadInitialData());
+  } else if (event === 'SIGNED_OUT') {
+    showLoginScreen();
   }
-})();
+});
+
+// Auto-focus al correo si no hay sesión activa
+setTimeout(function() {
+  var u = document.getElementById('lg-u');
+  if (u && document.getElementById('login-screen')) u.focus();
+}, 250);
 
 </script>
 </body>

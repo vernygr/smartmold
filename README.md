@@ -4,32 +4,38 @@ Herramienta de diagnóstico industrial para procesos de inyección de plástico,
 
 Permite a técnicos y operadores navegar un árbol de decisión para diagnosticar defectos de inyección (rechupes, rebabas, piezas incompletas, etc.), registrar soluciones aplicadas y llevar un historial de incidencias por molde.
 
-## Estructura del proyecto
+## Arquitectura
 
-Este repositorio contiene dos variantes de la aplicación:
+App estática de una sola página (`index.html` — HTML/CSS/JS embebidos, sin build step) que habla directo con [Supabase](https://supabase.com) (Postgres + Auth) usando el cliente `@supabase/supabase-js` desde CDN. No hay backend propio.
 
-- **`index.html`** — Aplicación estática de página única (HTML/CSS/JS embebidos), desplegada en Netlify. Persiste datos en `localStorage` y sincroniza opcionalmente con Google Sheets a través de un proxy CORS.
-- **`app.py`** + **`templates/index.html`** — Servidor Flask con autenticación por sesión y persistencia en archivos JSON (`data/records.json`, `data/mold_records.json`). Pensado para despliegue local o en un servidor propio.
+- **Auth**: Supabase Auth (email + contraseña). Cada usuario tiene un rol (`admin` o `tecnico`) en la tabla `profiles`; solo los admins pueden borrar registros.
+- **Datos**: tablas `records`, `mold_records` y `defect_categories` en Supabase, protegidas con Row Level Security. Ver [supabase/schema.sql](supabase/schema.sql).
+- **Despliegue**: sitio estático en [smartmoldep.netlify.app](https://smartmoldep.netlify.app) (Netlify sirve `index.html` tal cual, sin build).
 
-> Ambas variantes comparten la misma interfaz, pero **no comparten datos entre sí**: la versión estática usa `localStorage`/Google Sheets, mientras que la versión Flask usa su propio almacenamiento en disco.
+## Configurar tu propio proyecto Supabase
+
+1. Crea un proyecto gratis en [supabase.com](https://supabase.com).
+2. En **SQL Editor**, pega y ejecuta el contenido completo de [supabase/schema.sql](supabase/schema.sql). Esto crea las tablas, las políticas de acceso (RLS) y carga los datos iniciales (3 registros demo + 78 de la base histórica "Excel Rodolfo").
+3. En **Project Settings → API**, copia la **Project URL** y la **anon public key** (esta clave es segura para el cliente — la protección real la da RLS, no ocultar esta clave).
+4. Abre `index.html` y reemplaza los dos placeholders al inicio del `<script>` principal:
+   ```js
+   const SUPABASE_URL      = "TU_SUPABASE_URL_AQUI";
+   const SUPABASE_ANON_KEY = "TU_SUPABASE_ANON_KEY_AQUI";
+   ```
+5. Crea al menos un usuario: en Supabase → **Authentication → Users → Add user**. Se le crea automáticamente un perfil con rol `tecnico`.
+6. Para darle rol de administrador (puede borrar registros), corre en el SQL Editor:
+   ```sql
+   update public.profiles set role = 'admin' where id = '<uuid del usuario>';
+   ```
 
 ## Funcionalidades
 
-- Diagnóstico guiado por árbol de decisión para defectos comunes de inyección
-- Registro de troubleshooting (causa raíz, solución, parámetros antes/después)
+- Diagnóstico guiado por árbol de decisión para 18 categorías de defectos comunes de inyección
+- Registro de troubleshooting (causa raíz, solución, parámetro/valor anterior/valor nuevo, material)
 - Registro y búsqueda de incidencias por molde
-- Estadísticas básicas (total de registros, moldes, últimos defectos)
-- Autenticación con roles: `admin`, `operador`, `tecnico`, `supervisor`
+- Estadísticas básicas (total de registros, moldes, categorías)
+- Autenticación real por usuario, con control de quién puede borrar registros
 
-## Ejecutar la versión Flask localmente
+## Probar localmente
 
-```bash
-pip install -r requirements.txt
-python app.py
-```
-
-La app quedará disponible en `http://localhost:5000`.
-
-## Despliegue
-
-La versión estática (`index.html`) está publicada en [smartmoldep.netlify.app](https://smartmoldep.netlify.app).
+No requiere build ni servidor: basta con abrir `index.html` en el navegador, o servirlo con cualquier servidor estático (por ejemplo `npx serve` si tienes Node, o la extensión Live Server de VS Code).
