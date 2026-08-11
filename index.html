@@ -1971,7 +1971,14 @@ async function askAIAssistant() {
     btn.disabled = false;
     btn.textContent = '🤖 Preguntar al asistente';
     status.style.color = 'var(--red)';
-    status.textContent = '⚠ ' + (data?.error || error?.message || 'No se pudo contactar al asistente de IA.');
+    // supabase-js no expone el cuerpo del error automáticamente cuando la
+    // función responde con un status distinto de 2xx — hay que leerlo del
+    // Response crudo que queda en error.context.
+    let detail = data?.error;
+    if (!detail && error?.context?.json) {
+      try { detail = (await error.context.json())?.error; } catch (_) { /* no era JSON */ }
+    }
+    status.textContent = '⚠ ' + (detail || error?.message || 'No se pudo contactar al asistente de IA.');
     return;
   }
 
