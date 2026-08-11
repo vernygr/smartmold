@@ -4,14 +4,19 @@
 // Requiere el secreto GEMINI_API_KEY (Dashboard → Edge Functions → Secrets),
 // obtenido gratis en https://aistudio.google.com/apikey
 //
-// El proyecto ya rechaza automáticamente llamadas sin sesión válida (verificación
-// de JWT a nivel de plataforma), así que aquí no hay que reimplementar eso.
+// IMPORTANTE: en la configuración de esta función (Dashboard → Edge Functions
+// → diagnose-ai → Settings) desactiva "Enforce JWT Verification". La
+// verificación a nivel de plataforma intercepta también el preflight CORS
+// (OPTIONS) y lo rechaza porque el navegador no manda Authorization en esa
+// solicitud — por eso la verificación de sesión se hace acá abajo, a mano,
+// después de responder el OPTIONS.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 const RESPONSE_SCHEMA = {
@@ -35,6 +40,24 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return jsonResponse({ error: "No autenticado." }, 401);
+    }
+
+    // Cliente con la sesión del técnico que llama — respeta las mismas RLS
+    // que ya protegen records/defect_categories, sin necesitar service role.
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return jsonResponse({ error: "Sesión inválida o expirada. Vuelve a iniciar sesión." }, 401);
+    }
+
     const { descripcion } = await req.json();
     if (!descripcion || typeof descripcion !== "string" || descripcion.trim().length < 8) {
       return jsonResponse({ error: "Describe el problema con al menos una frase completa." }, 400);
@@ -44,14 +67,6 @@ Deno.serve(async (req) => {
     if (!geminiKey) {
       return jsonResponse({ error: "El asistente de IA no está configurado (falta GEMINI_API_KEY)." }, 500);
     }
-
-    // Cliente con la sesión del técnico que llama — respeta las mismas RLS
-    // que ya protegen records/defect_categories, sin necesitar service role.
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: req.headers.get("Authorization")! } } },
-    );
 
     const [{ data: categorias }, { data: registros }] = await Promise.all([
       supabase.from("defect_categories").select("label, hint").order("sort_order"),
