@@ -28,9 +28,21 @@ App estática de una sola página (`index.html` — HTML/CSS/JS embebidos, sin b
    update public.profiles set role = 'admin' where id = '<uuid del usuario>';
    ```
 
+## Configurar el asistente de IA (opcional)
+
+Cuando el árbol de diagnóstico no tiene una categoría clara para lo que describe el técnico, puede pedirle una sugerencia a un asistente de IA (Google Gemini, nivel gratuito) en vez de quedarse sin opciones.
+
+1. Crea una API key gratis en [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+2. En **SQL Editor**, corre [supabase/migrations/002_ai_assistant.sql](supabase/migrations/002_ai_assistant.sql) (agrega las columnas `origen` y `revisado` a `records`).
+3. En **Edge Functions** del dashboard de Supabase, crea una función nueva llamada `diagnose-ai` y pega el contenido de [supabase/functions/diagnose-ai/index.ts](supabase/functions/diagnose-ai/index.ts).
+4. En **Edge Functions → Secrets**, agrega `GEMINI_API_KEY` con la key del paso 1. (`SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` ya están disponibles automáticamente, no hay que configurarlos.)
+
+Las sugerencias de la IA quedan guardadas en `records` marcadas como `origen = 'ia'` y `revisado = false` hasta que un admin las confirme desde la pestaña "Registros" (botón "✓ Revisado") — así el conocimiento generado por IA no se trata como confirmado hasta que un humano lo valide.
+
 ## Funcionalidades
 
 - Diagnóstico guiado por árbol de decisión para 18 categorías de defectos comunes de inyección
+- Asistente de IA como respaldo cuando ninguna opción del árbol aplica (ver arriba)
 - Registro de troubleshooting (causa raíz, solución, parámetro/valor anterior/valor nuevo, material)
 - Registro y búsqueda de incidencias por molde
 - Estadísticas básicas (total de registros, moldes, categorías)

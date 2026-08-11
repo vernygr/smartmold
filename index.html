@@ -1713,6 +1713,14 @@ function renderDefectSelector() {
             <span class="opt-arrow">›</span>
           </button>
         `).join('')}
+        <button class="opt-btn" onclick="showAIAssist()" style="border-style:dashed;">
+          <div class="opt-icon">🤖</div>
+          <div class="opt-text">
+            <span class="opt-label">No encuentro mi defecto</span>
+            <span class="opt-hint">Describe el problema con tus palabras y pregúntale al asistente de IA</span>
+          </div>
+          <span class="opt-arrow">›</span>
+        </button>
       </div>
     </div>`;
   document.getElementById('diag-content').innerHTML = html;
@@ -1760,6 +1768,14 @@ function renderStep(step) {
             <span class="opt-arrow">›</span>
           </button>
         `).join('')}
+        <button class="opt-btn" onclick="showAIAssist()" style="border-style:dashed;">
+          <div class="opt-icon">🤖</div>
+          <div class="opt-text">
+            <span class="opt-label">Ninguna de estas aplica</span>
+            <span class="opt-hint">Describe el problema con tus palabras y pregúntale al asistente de IA</span>
+          </div>
+          <span class="opt-arrow">›</span>
+        </button>
       </div>
     </div>`;
   document.getElementById('diag-content').innerHTML = html;
@@ -1882,6 +1898,7 @@ async function saveLog() {
     valor_nuevo: res.params?.[0]?.[2] || '',
     material: '',
     tecnico: currentProfile?.display_name || '',
+    origen: 'arbol',
   };
 
   const { error } = await supabaseClient.from('records').insert(record);
@@ -1891,6 +1908,147 @@ async function saveLog() {
   updateStats();
   document.getElementById('log-saved').style.display = 'inline';
   showToast('✓ Diagnóstico guardado', 'success');
+}
+
+// ══════════════════════════════════════════════════════════
+// ASISTENTE DE IA — respaldo cuando el árbol no tiene una
+// categoría clara (ver supabase/functions/diagnose-ai)
+// ══════════════════════════════════════════════════════════
+let aiAssistReturnTo = null; // paso del árbol al que volver con "← Volver al árbol"
+let lastAIResult = null;
+
+function showAIAssist() {
+  if (diagState.tree) {
+    aiAssistReturnTo = { tree: diagState.tree, stepId: diagState.stepId, path: [...diagState.path], history: diagState.history.map(h => ({...h})) };
+  }
+  const html = `
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-num">🤖 ASISTENTE DE IA</span>
+      </div>
+      <div class="step-question">Describe el problema con tus palabras</div>
+      <div class="step-context">Cuéntanos qué ves en la pieza, en qué zona, y cualquier detalle del proceso que te parezca relevante. Mientras más específico seas, mejor será la sugerencia.</div>
+      <div style="padding:16px 18px;">
+        <textarea class="ffield" id="ai-desc" rows="4" style="width:100%;" placeholder="Ej: La pieza sale con una especie de raya blanca cerca del punto de inyección, solo en el molde MOL-014, desde ayer..."></textarea>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="askAIAssistant()" id="ai-ask-btn">🤖 Preguntar al asistente</button>
+          <button class="btn btn-outline" onclick="cancelAIAssist()">← Volver al árbol</button>
+        </div>
+        <div id="ai-status" style="font-size:12.5px;color:var(--text3);margin-top:10px;"></div>
+      </div>
+    </div>`;
+  document.getElementById('diag-content').innerHTML = html;
+}
+
+function cancelAIAssist() {
+  if (aiAssistReturnTo) {
+    diagState = aiAssistReturnTo;
+    aiAssistReturnTo = null;
+    renderDiag();
+  } else {
+    resetDiag();
+  }
+}
+
+async function askAIAssistant() {
+  const desc   = document.getElementById('ai-desc').value.trim();
+  const status = document.getElementById('ai-status');
+  if (desc.length < 8) {
+    status.style.color = 'var(--orange)';
+    status.textContent = '⚠ Describe el problema con al menos una frase completa.';
+    return;
+  }
+
+  const btn = document.getElementById('ai-ask-btn');
+  btn.disabled = true;
+  btn.textContent = '⟳ Consultando...';
+  status.style.color = 'var(--text3)';
+  status.textContent = 'Esto puede tardar unos segundos...';
+
+  const { data, error } = await supabaseClient.functions.invoke('diagnose-ai', { body: { descripcion: desc } });
+
+  if (error || !data?.diagnostico) {
+    btn.disabled = false;
+    btn.textContent = '🤖 Preguntar al asistente';
+    status.style.color = 'var(--red)';
+    status.textContent = '⚠ ' + (data?.error || error?.message || 'No se pudo contactar al asistente de IA.');
+    return;
+  }
+
+  renderAIResult(data.diagnostico, desc);
+}
+
+function renderAIResult(d, descripcionOriginal) {
+  lastAIResult = { ...d, descripcionOriginal };
+  const sevClass  = d.severidad === 'alta' ? 'sp-critical' : d.severidad === 'media' ? 'sp-warning' : 'sp-info';
+  const iconClass = d.severidad === 'alta' ? 'ri-red' : d.severidad === 'media' ? 'ri-amber' : 'ri-blue';
+
+  const html = `
+    <div class="result-card">
+      <div class="result-top">
+        <div class="result-icon ${iconClass}">🤖</div>
+        <div class="result-title-wrap">
+          <div class="result-title">${d.categoria_sugerida}</div>
+          <div class="result-subtitle">Sugerencia de IA — ${d.sintoma_resumen || descripcionOriginal}</div>
+        </div>
+        <span class="sev-pill ${sevClass}">${(d.severidad || '').toUpperCase()}</span>
+      </div>
+      <div style="padding:14px 22px;background:#fffbeb;border-bottom:1px solid var(--border);font-size:12.5px;color:#92400e;">
+        🤖 <strong>Sugerencia de IA sin confirmar</strong> — confianza: ${(d.confianza || '').toUpperCase()}. Verifica antes de aplicar la solución.${d.nota ? `<br>${d.nota}` : ''}
+      </div>
+      <div class="solution-levels">
+        <div class="level-block l-basic open">
+          <div class="level-header" onclick="toggleLevel(this)">
+            <span class="level-badge lb-basic">Causa raíz y solución sugeridas</span>
+            <span class="level-expand">›</span>
+          </div>
+          <div class="level-content">
+            <div class="sol-steps">
+              <div class="sol-step"><div class="sol-step-num">1</div><div class="sol-step-text"><strong>Causa probable:</strong> ${d.causa_raiz}</div></div>
+              <div class="sol-step"><div class="sol-step-num">2</div><div class="sol-step-text"><strong>Solución sugerida:</strong> ${d.solucion}</div></div>
+              ${d.parametro ? `<div class="sol-step"><div class="sol-step-num">3</div><div class="sol-step-text"><strong>Parámetro a revisar:</strong> ${d.parametro}</div></div>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="result-actions">
+        <button class="btn btn-primary" onclick="saveAIRecord()">💾 Guardar como registro</button>
+        <button class="btn btn-outline" onclick="showAIAssist()">↺ Volver a preguntar</button>
+        <button class="btn btn-outline" onclick="cancelAIAssist()">← Volver al árbol</button>
+        <span id="ai-log-saved" style="font-size:12px;color:var(--ep-green);font-weight:600;display:none;">✓ Guardado</span>
+      </div>
+    </div>`;
+  document.getElementById('diag-content').innerHTML = html;
+}
+
+async function saveAIRecord() {
+  if (!lastAIResult) return;
+  const tsCount = db.records.filter(r => (r.id || '').startsWith('TS-')).length;
+  const record = {
+    id: 'TS-' + String(tsCount + 1).padStart(3,'0'),
+    fecha: new Date().toISOString().split('T')[0],
+    categoria: lastAIResult.categoria_sugerida,
+    severidad: lastAIResult.severidad,
+    sintoma: lastAIResult.descripcionOriginal,
+    causa_raiz: lastAIResult.causa_raiz,
+    solucion: lastAIResult.solucion,
+    parametro: lastAIResult.parametro || '',
+    valor_anterior: '',
+    valor_nuevo: '',
+    material: '',
+    tecnico: currentProfile?.display_name || '',
+    origen: 'ia',
+    revisado: false,
+  };
+
+  const { error } = await supabaseClient.from('records').insert(record);
+  if (error) { showToast('⚠ Error al guardar: ' + error.message, 'warning'); return; }
+
+  db.records.unshift(record);
+  updateStats();
+  const saved = document.getElementById('ai-log-saved');
+  if (saved) saved.style.display = 'inline';
+  showToast('✓ Sugerencia guardada (pendiente de revisión)', 'success');
 }
 
 function renderBreadcrumb() {
@@ -2816,11 +2974,16 @@ function renderRecordsTable() {
     <tr id="row-${r.id}">
       <td style="color:var(--ep-blue);font-weight:700;font-family:var(--mono);">${r.id}</td>
       <td style="font-family:var(--mono);font-size:12px;">${r.fecha}</td>
-      <td>${r.categoria}</td>
+      <td>${r.categoria}${r.origen === 'ia' && !r.revisado ? ' <span class="pill pill-amber" title="Sugerencia de IA sin confirmar">🤖 Sin revisar</span>' : ''}</td>
       <td><span class="pill ${r.severidad==='alta'?'pill-red':r.severidad==='media'?'pill-amber':'pill-green'}">${(r.severidad||'').toUpperCase()}</span></td>
       <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.sintoma}</td>
       <td style="color:var(--text3);">${r.tecnico||'—'}</td>
-      <td>
+      <td style="white-space:nowrap;">
+        ${isAdmin && r.origen === 'ia' && !r.revisado ? `<button onclick="markReviewed('${r.id}')"
+          style="background:none;border:1px solid #bbf7d0;color:var(--ep-green);font-size:11px;padding:3px 10px;border-radius:5px;cursor:pointer;font-family:var(--mono);transition:all 0.15s;margin-right:6px;"
+          onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='none'">
+          ✓ Revisado
+        </button>` : ''}
         ${isAdmin ? `<button onclick="confirmDelete('${r.id}','general')"
           style="background:none;border:1px solid #fecaca;color:var(--red);font-size:11px;padding:3px 10px;border-radius:5px;cursor:pointer;font-family:var(--mono);transition:all 0.15s;"
           onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
@@ -2828,6 +2991,15 @@ function renderRecordsTable() {
         </button>` : ''}
       </td>
     </tr>`).join('');
+}
+
+async function markReviewed(id) {
+  const { error } = await supabaseClient.from('records').update({ revisado: true }).eq('id', id);
+  if (error) { showToast('⚠ Error al actualizar: ' + error.message, 'warning'); return; }
+  const rec = db.records.find(r => r.id === id);
+  if (rec) rec.revisado = true;
+  renderRecordsTable();
+  showToast('✓ Registro marcado como revisado', 'success');
 }
 
 // ── Also render mold records table ──
